@@ -1,0 +1,21 @@
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+        resources {
+            srcDir 'war'
+        }
+    }
+}
+
+dependencies {
+    compile project(":user")
+}
+
+idea {
+    module {
+        addSourcesToIdeaClasspath(iml, ['file://$MODULE_DIR$/../src'])
+        addGwtFacetToIdea(iml)
+    }
+}
