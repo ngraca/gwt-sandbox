@@ -57,6 +57,10 @@ public class JMethod extends JNode implements HasEnclosingType, HasName, HasType
 
   private static class ExternalSerializedForm implements Serializable {
 
+    public JMethod toExternal() {
+       return getExternalizedMethod(enclosingType.getName(), signature, false);
+    }
+
     private final JDeclaredType enclosingType;
     private final String signature;
 

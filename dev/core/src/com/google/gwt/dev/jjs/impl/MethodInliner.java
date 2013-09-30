@@ -469,6 +469,7 @@ public class MethodInliner {
 
       // Replace with a cloned call argument.
       CloneExpressionVisitor cloner = new CloneExpressionVisitor();
+
       JExpression arg = methodCall.getArgs().get(paramIndex);
       JExpression clone = cloner.cloneExpression(arg);
 

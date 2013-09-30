@@ -21,34 +21,7 @@ import com.google.gwt.dev.jdt.SafeASTVisitor;
 import com.google.gwt.dev.jjs.InternalCompilerException;
 import com.google.gwt.dev.jjs.SourceInfo;
 import com.google.gwt.dev.jjs.SourceOrigin;
-import com.google.gwt.dev.jjs.ast.AccessModifier;
-import com.google.gwt.dev.jjs.ast.JAbsentArrayDimension;
-import com.google.gwt.dev.jjs.ast.JArrayLength;
-import com.google.gwt.dev.jjs.ast.JArrayRef;
-import com.google.gwt.dev.jjs.ast.JArrayType;
-import com.google.gwt.dev.jjs.ast.JAssertStatement;
-import com.google.gwt.dev.jjs.ast.JBinaryOperation;
-import com.google.gwt.dev.jjs.ast.JBinaryOperator;
-import com.google.gwt.dev.jjs.ast.JBlock;
-import com.google.gwt.dev.jjs.ast.JBooleanLiteral;
-import com.google.gwt.dev.jjs.ast.JBreakStatement;
-import com.google.gwt.dev.jjs.ast.JCaseStatement;
-import com.google.gwt.dev.jjs.ast.JCastOperation;
-import com.google.gwt.dev.jjs.ast.JCharLiteral;
-import com.google.gwt.dev.jjs.ast.JClassLiteral;
-import com.google.gwt.dev.jjs.ast.JClassType;
-import com.google.gwt.dev.jjs.ast.JConditional;
-import com.google.gwt.dev.jjs.ast.JConstructor;
-import com.google.gwt.dev.jjs.ast.JContinueStatement;
-import com.google.gwt.dev.jjs.ast.JDeclarationStatement;
-import com.google.gwt.dev.jjs.ast.JDeclaredType;
-import com.google.gwt.dev.jjs.ast.JDoStatement;
-import com.google.gwt.dev.jjs.ast.JDoubleLiteral;
-import com.google.gwt.dev.jjs.ast.JEnumField;
-import com.google.gwt.dev.jjs.ast.JEnumType;
-import com.google.gwt.dev.jjs.ast.JExpression;
-import com.google.gwt.dev.jjs.ast.JExpressionStatement;
-import com.google.gwt.dev.jjs.ast.JField;
+import com.google.gwt.dev.jjs.ast.*;
 import com.google.gwt.dev.jjs.ast.JField.Disposition;
 import com.google.gwt.dev.jjs.ast.JFieldRef;
 import com.google.gwt.dev.jjs.ast.JFloatLiteral;
@@ -111,6 +84,7 @@ import com.google.gwt.thirdparty.guava.common.collect.Interner;
 import com.google.gwt.thirdparty.guava.common.collect.Maps;
 import com.google.gwt.thirdparty.guava.common.collect.Sets;
 
+import com.sun.swing.internal.plaf.synth.resources.synth;
 import org.eclipse.jdt.core.compiler.CharOperation;
 import org.eclipse.jdt.internal.compiler.ast.AND_AND_Expression;
 import org.eclipse.jdt.internal.compiler.ast.ASTNode;
@@ -1103,7 +1077,195 @@ public class GwtAstBuilder {
       }
     }
 
-    @Override
+      @Override
+      public boolean visit(LambdaExpression x, BlockScope blockScope) {
+          SyntheticArgumentBinding[] synthArgs = null;
+
+          try {
+              Field f = LambdaExpression.class.getDeclaredField("outerLocalVariables");
+              f.setAccessible(true);
+              synthArgs = (SyntheticArgumentBinding[]) f.get(x);
+
+          } catch (Exception e) {
+          }
+          String paramNames[];
+          paramNames = new String[x.binding.parameters.length];
+          int numSynthArgs = synthArgs != null ? synthArgs.length : 0;
+          for (int i = 0; i < paramNames.length; i++) {
+              if (i < numSynthArgs) {
+                  paramNames[i] = new String(synthArgs[i].actualOuterLocalVariable.name);
+              } else {
+                  paramNames[i] = new String(x.arguments[i - numSynthArgs].name);
+              }
+          }
+          SourceInfo info = makeSourceInfo(x);
+          JMethod lambdaMethod = createSyntheticMethodFromBinding(info, x.binding,
+                  paramNames);
+          JMethodBody methodBody = new JMethodBody(info);
+          lambdaMethod.setBody(methodBody);
+          pushMethodInfo(new MethodInfo(lambdaMethod, methodBody, x.scope));
+          Iterator<JParameter> it = lambdaMethod.getParams().iterator();
+          if (synthArgs != null) {
+              for (SyntheticArgumentBinding sa : synthArgs) {
+                  curMethod.locals.put(sa.actualOuterLocalVariable, it.next());
+              }
+              for (Argument a : x.arguments) {
+                  curMethod.locals.put(a.binding, it.next());
+              }
+          }
+          return true;
+      }
+
+      @Override
+      public void endVisit(LambdaExpression x, BlockScope blockScope) {
+
+          /**
+           * class Enclosing {
+           *
+           *   T lambda$0(locals, args) {...lambda expr }
+           *
+           *   class lambda$0$type implements I {
+           *       ctor(outer, locals) { ... }
+           *       R <SAM lambdaMethod>(args) { return outer.lambda$0(locals, args); }
+           *   }
+           * }
+           */
+
+          TypeBinding binding = x.expectedType();
+          MethodBinding samBinding = binding instanceof SourceTypeBinding ?
+                  ((SourceTypeBinding) binding).getSingleAbstractMethod(blockScope) :
+                  ((BinaryTypeBinding) binding).getSingleAbstractMethod(blockScope);
+          JMethod interfaceMethod = typeMap.get(samBinding);
+          JInterfaceType funcType = (JInterfaceType) interfaceMethod.getEnclosingType();
+          SourceInfo info = makeSourceInfo(x);
+          JClassType innerLambda = new JClassType(info,
+                  new String(x.binding.selector) + "$Type",false, true);
+          innerLambda.setEnclosingType((JDeclaredType) typeMap.get(x.binding.declaringClass));
+          innerLambda.addImplements(funcType);
+          innerLambda.setSuperClass(javaLangObject);
+          createSyntheticMethod(info, "$clinit", innerLambda, JPrimitiveType.VOID, false, true, true,
+                  AccessModifier.PRIVATE);
+
+          createSyntheticMethod(info, "$init", innerLambda, JPrimitiveType.VOID, false, false, true,
+                      AccessModifier.PRIVATE);
+
+          // Add a getClass() implementation for all non-Object classes.
+          createSyntheticMethod(info, "getClass", innerLambda, javaLangClass, false, false, false,
+                          AccessModifier.PUBLIC);
+
+          JConstructor ctor = new JConstructor(info,
+                  (JClassType) innerLambda);
+          JParameter outerParam = new JParameter(info, "outer", innerLambda.getEnclosingType(),
+                  true, false, ctor);
+          ctor.addParam(outerParam);
+          JField outerField = new JField(info, "$$outer", innerLambda,
+                  innerLambda.getEnclosingType(), false, Disposition.NONE);
+          innerLambda.addField(outerField);
+
+          JMethodBody ctorBody = new JMethodBody(info);
+
+          JThisRef ojThis = new JThisRef(info, innerLambda);
+          JFieldRef ojFieldRef = new JFieldRef(info, ojThis, outerField, innerLambda);
+          JParameterRef ojParamRef = new JParameterRef(info, outerParam);
+          ctorBody.getBlock().addStmt(
+                  new JBinaryOperation(info, ojFieldRef.getType(),
+                          JBinaryOperator.ASG,
+                          ojFieldRef, ojParamRef).makeStatement());
+
+          List<JField> locals = new ArrayList<JField>();
+          SyntheticArgumentBinding[] synthArgs = null;
+
+          try {
+              Field f = LambdaExpression.class.getDeclaredField("outerLocalVariables");
+              f.setAccessible(true);
+              synthArgs = (SyntheticArgumentBinding[]) f.get(x);
+
+          } catch (Exception e) {
+          }
+          String paramNames[];
+          paramNames = new String[x.binding.parameters.length];
+          int numSynthArgs = synthArgs != null ? synthArgs.length : 0;
+
+          for (int i = 0; i < paramNames.length; i++) {
+              if (i < numSynthArgs) {
+                paramNames[i] = new String(synthArgs[i].actualOuterLocalVariable.name);
+                  JType localType = typeMap.get(synthArgs[i].type);
+                  JParameter jParam = new JParameter(info, paramNames[i],
+                          localType, true, false, ctor);
+                  ctor.addParam(jParam);
+                  JField jField = new JField(info, paramNames[i], innerLambda,
+                          localType, false, Disposition.NONE);
+                  locals.add(jField);
+                  innerLambda.addField(jField);
+                  JThisRef jThis = new JThisRef(info, innerLambda);
+                  JFieldRef jFieldRef = new JFieldRef(info, jThis, jField, innerLambda);
+                  JParameterRef jParamRef = new JParameterRef(info, jParam);
+                  ctorBody.getBlock().addStmt(
+                          new JBinaryOperation(info, jFieldRef.getType(),
+                                  JBinaryOperator.ASG,
+                          jFieldRef, jParamRef).makeStatement());
+              } else {
+                  paramNames[i] = new String(x.arguments[i - numSynthArgs].name);
+              }
+          }
+          ctor.setBody(ctorBody);
+          innerLambda.addMethod(ctor);
+
+          JMethod lambdaMethod = curMethod.method;
+
+          JNode node = pop();
+          JMethodBody body = (JMethodBody) curMethod.method.getBody();
+          JStatement lambdaStatement = node instanceof JExpression ?
+                  ((JExpression) node).makeStatement() : (JStatement) node;
+          body.getBlock().addStmt(lambdaStatement);
+          lambdaMethod.setBody(body);
+
+
+          JMethod samMethod = new JMethod(info, interfaceMethod.getName(),
+                  innerLambda, interfaceMethod.getType(),
+                  false, false, true, interfaceMethod.getAccess());
+          for (JParameter origParam : interfaceMethod.getParams()) {
+              JType origType = origParam.getType();
+              if (origType instanceof JClassType) {
+//                  origType = ((JClassType) origType).toExternal();
+              }
+              samMethod.addParam(new JParameter(origParam.getSourceInfo(),
+                      origParam.getName(), origType,
+                      origParam.isFinal(), origParam.isThis(),
+                      samMethod));
+          }
+          JMethodBody samMethodBody = new JMethodBody(info);
+          JMethodCall samCall = new JMethodCall(info, new JFieldRef(info,
+                  new JThisRef(info, innerLambda), outerField, innerLambda),
+                  lambdaMethod);
+          for (JField localField : locals) {
+              samCall.addArg(new JFieldRef(info, new JThisRef(info, innerLambda),
+                      localField, innerLambda));
+          }
+          for (JParameter param : samMethod.getParams()) {
+              samCall.addArg(new JParameterRef(info, param));
+          }
+          if (samMethod.getType() != JPrimitiveType.VOID) {
+              samMethodBody.getBlock().addStmt(new JReturnStatement(info, samCall));
+          } else {
+              samMethodBody.getBlock().addStmt(samCall.makeStatement());
+          }
+          samMethod.setBody(samMethodBody);
+          innerLambda.addMethod(samMethod);
+          JNewInstance allocLambda = new JNewInstance(info, ctor, innerLambda);
+          allocLambda.addArg(new JThisRef(info, (JClassType) outerField.getEnclosingType()));
+          for (SyntheticArgumentBinding sa : synthArgs) {
+              allocLambda.addArg(makeLocalRef(info, sa.actualOuterLocalVariable, methodStack.peek()));
+          }
+          ctor.freezeParamTypes();
+          samMethod.freezeParamTypes();
+
+          push(allocLambda);
+          popMethodInfo();
+          newTypes.add(innerLambda);
+      }
+
+      @Override
     public void endVisit(LocalDeclaration x, BlockScope scope) {
       try {
         SourceInfo info = makeSourceInfo(x);
@@ -2354,14 +2516,18 @@ public class GwtAstBuilder {
       return new JFieldRef(info, makeThisRef(info), field, curClass.classType);
     }
 
-    private JExpression makeLocalRef(SourceInfo info, LocalVariableBinding b) {
-      JVariable variable = curMethod.locals.get(b);
+    private JExpression makeLocalRef(SourceInfo info, LocalVariableBinding b, MethodInfo cur) {
+      JVariable variable = cur.locals.get(b);
       assert variable != null;
       if (variable instanceof JLocal) {
         return new JLocalRef(info, (JLocal) variable);
       } else {
         return new JParameterRef(info, (JParameter) variable);
       }
+    }
+
+    private JExpression makeLocalRef(SourceInfo info, LocalVariableBinding b) {
+      return makeLocalRef(info, b, curMethod);
     }
 
     private JThisRef makeThisRef(SourceInfo info) {
@@ -3496,6 +3662,9 @@ public class GwtAstBuilder {
       }
       name = intern(name);
       JDeclaredType type;
+        if (name.contains("Defender") || name.contains("Foo")) {
+            boolean xx = true;
+        }
       if (binding.isClass()) {
         type = new JClassType(info, name, binding.isAbstract(), binding.isFinal());
         if (getAnnotation(x.binding, JSINTERFACEPROTOTYPE_CLASS) != null) {
