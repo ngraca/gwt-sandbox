@@ -103,4 +103,8 @@ public class JInterfaceType extends JDeclaredType {
       return this;
     }
   }
+
+  public JInterfaceType toExternal() {
+    return new JInterfaceType(name);
+  }
 }

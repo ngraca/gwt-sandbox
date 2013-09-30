@@ -18,9 +18,12 @@ package com.google.gwt.sample.hello.client;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.core.client.js.JsInterface;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.RootPanel;
+
+import static com.google.gwt.user.client.Window.alert;
 
 /**
  * HelloWorld application.
@@ -33,7 +36,6 @@ public class Hello implements EntryPoint {
         Window.alert("Hello, AJAX");
       }
     });
-
     RootPanel.get().add(b);
   }
 }
