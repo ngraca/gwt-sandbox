@@ -3474,6 +3474,9 @@ public class GwtAstBuilder {
       }
       name = intern(name);
       JDeclaredType type;
+        if (name.contains("Defender") || name.contains("Foo")) {
+            boolean xx = true;
+        }
       if (binding.isClass()) {
         type = new JClassType(info, name, binding.isAbstract(), binding.isFinal());
       } else if (binding.isInterface() || binding.isAnnotationType()) {
