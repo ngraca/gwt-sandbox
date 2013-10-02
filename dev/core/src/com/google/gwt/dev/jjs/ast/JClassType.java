@@ -112,4 +112,8 @@ public class JClassType extends JDeclaredType implements CanBeSetFinal {
       return this;
     }
   }
+
+  public JClassType toExternal() {
+    return new JClassType(getName());
+  }
 }
