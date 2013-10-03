@@ -517,12 +517,15 @@ public class JdtCompiler {
       }
     };
 
-    long jdtSourceLevel = jdtLevelByGwtLevel.get(SourceLevel.JAVA8);
+    long jdtSourceLevel = jdtLevelByGwtLevel.get(SourceLevel.DEFAULT_SOURCE_LEVEL);
+    options.ignoreMethodBodies = false;
+    options.produceMethodParameters = true;
 
     options.originalSourceLevel = jdtSourceLevel;
     options.complianceLevel = jdtSourceLevel;
     options.sourceLevel = jdtSourceLevel;
-    options.targetJDK = jdtLevelByGwtLevel.get(SourceLevel.JAVA8);
+    options.targetJDK = jdtSourceLevel;
+
     // Generate debug info for debugging the output.
     options.produceDebugAttributes =
         ClassFileConstants.ATTR_VARS | ClassFileConstants.ATTR_LINES
@@ -546,7 +549,7 @@ public class JdtCompiler {
     options.originalSourceLevel = jdtSourceLevel;
     options.complianceLevel = jdtSourceLevel;
     options.sourceLevel = jdtSourceLevel;
-    options.targetJDK = jdtLevelByGwtLevel.get(SourceLevel.JAVA7);
+    options.targetJDK = jdtSourceLevel;
     return options;
   }
 

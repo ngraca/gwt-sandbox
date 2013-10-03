@@ -23,6 +23,8 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.RootPanel;
 
+import java.util.Arrays;
+
 import static com.google.gwt.user.client.Window.alert;
 
 /**
@@ -38,4 +40,19 @@ public class Hello implements EntryPoint {
     });
     RootPanel.get().add(b);
   }
+
+  public static native Object foo() /*-{
+    var but = $doc.createElement("button");
+    $doc.body.appendChild(but);
+    return but;
+  }-*/;
+
+  public static native void register(Base e) /*-{
+    $wnd.__r = e;
+  }-*/;
+
+  private static native <T> T abc() /*-{
+      return $doc.createElement("a");
+  }-*/;
+
 }
