@@ -265,11 +265,11 @@ public class JdtCompiler {
       this.diet = saveDiet;
       if (removeGwtIncompatible) {
         // Remove @GwtIncompatible classes and members.
-        GwtIncompatiblePreprocessor.preproccess(decl);
+//        GwtIncompatiblePreprocessor.preproccess(decl);
       }
       if (removeUnusedImports) {
         // Lastly remove any unused imports
-        UnusedImportsRemover.exec(decl);
+//        UnusedImportsRemover.exec(decl);
       }
       return decl;
     }
@@ -519,7 +519,7 @@ public class JdtCompiler {
 
     long jdtSourceLevel = jdtLevelByGwtLevel.get(SourceLevel.DEFAULT_SOURCE_LEVEL);
     options.ignoreMethodBodies = false;
-    options.produceMethodParameters = true;
+//    options.produceMethodParameters = true;
 
     options.originalSourceLevel = jdtSourceLevel;
     options.complianceLevel = jdtSourceLevel;

@@ -23,7 +23,10 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.RootPanel;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.google.gwt.user.client.Window.alert;
 
@@ -55,4 +58,14 @@ public class Hello implements EntryPoint {
       return $doc.createElement("a");
   }-*/;
 
+
+    Double filterSum(List<Double> list, Predicate<Double> pred) {
+        double s = 0;
+        for (double d : list) {
+            if (pred.test(d)) {
+                s+=d;
+            }
+        }
+        return s;
+    }
 }

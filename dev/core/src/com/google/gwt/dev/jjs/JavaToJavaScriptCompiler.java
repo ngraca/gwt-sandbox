@@ -245,6 +245,9 @@ public abstract class JavaToJavaScriptCompiler {
         if (logger.isLoggable(TreeLogger.INFO)) {
           logger.log(TreeLogger.INFO, "Compiling permutation " + permutationId + "...");
         }
+        ImplementClassLiteralsAsFields.exec(jprogram);
+        MixinDefenderMethods.exec(jprogram);
+
         printPermutationTrace(permutation);
 
         // (2) Transform unresolved Java AST to resolved Java AST
@@ -604,7 +607,20 @@ public abstract class JavaToJavaScriptCompiler {
         generateCompileReport.end();
       }
 
-      soycEvent.end();
+      // (3) Perform Java AST normalizations.
+      FixAssignmentsToUnboxOrCast.exec(jprogram);
+
+      /*
+       * TODO: If we defer this until later, we could maybe use the results of
+       * the assertions to enable more optimizations.
+       */
+      if (options.isEnableAssertions()) {
+        // Turn into assertion checking calls.
+        AssertionNormalizer.exec(jprogram);
+      } else {
+        // Remove all assert statements.
+        AssertionRemover.exec(jprogram);
+      }
 
       return soycArtifacts;
     }
