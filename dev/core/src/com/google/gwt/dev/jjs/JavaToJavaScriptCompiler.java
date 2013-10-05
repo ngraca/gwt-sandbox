@@ -565,6 +565,22 @@ public abstract class JavaToJavaScriptCompiler {
       if (dependencies != null) {
         soycArtifacts.add(dependencies);
       }
+      MixinDefenderMethods.exec(jprogram);
+
+        // (3) Perform Java AST normalizations.
+      FixAssignmentsToUnboxOrCast.exec(jprogram);
+
+      /*
+       * TODO: If we defer this until later, we could maybe use the results of
+       * the assertions to enable more optimizations.
+       */
+      if (options.isEnableAssertions()) {
+        // Turn into assertion checking calls.
+        AssertionNormalizer.exec(jprogram);
+      } else {
+        // Remove all assert statements.
+        AssertionRemover.exec(jprogram);
+      }
 
       // Set all of the main SOYC artifacts private.
       for (SyntheticArtifact soycArtifact : soycArtifacts) {
@@ -572,7 +588,6 @@ public abstract class JavaToJavaScriptCompiler {
       }
 
       ImplementClassLiteralsAsFields.exec(jprogram);
-      MixinDefenderMethods.exec(jprogram);
 
       if (!htmlReportsDisabled && sizeBreakdowns != null) {
         Event generateCompileReport = SpeedTracerLogger.start(
