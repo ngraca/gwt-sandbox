@@ -70,6 +70,7 @@ import com.google.gwt.dev.jjs.ast.JNameOf;
 import com.google.gwt.dev.jjs.ast.JNewArray;
 import com.google.gwt.dev.jjs.ast.JNewInstance;
 import com.google.gwt.dev.jjs.ast.JNode;
+import com.google.gwt.dev.jjs.ast.JNonNullType;
 import com.google.gwt.dev.jjs.ast.JNullLiteral;
 import com.google.gwt.dev.jjs.ast.JNumericEntry;
 import com.google.gwt.dev.jjs.ast.JParameter;
@@ -1193,6 +1194,17 @@ public class GenerateJavaScriptAST {
         JsFunction clinitFunc = jsFuncs.get(0);
         handleClinit(clinitFunc, null);
         globalStmts.add(clinitFunc.makeStmt());
+      } else {
+        jsFuncs.set(0, null);
+      }
+
+      // declare all static methods (Java8) into the global scope
+      for (int i = 0; i < jsFuncs.size(); ++i) {
+          JsFunction func = jsFuncs.get(i);
+         // don't add polymorphic JsFuncs, inline decl into vtable assignment
+         if (func != null && !polymorphicJsFunctions.contains(func)) {
+             globalStmts.add(func.makeStmt());
+         }
       }
 
       // setup fields
@@ -1375,14 +1387,33 @@ public class GenerateJavaScriptAST {
           // replace the method with its retargeted clinit
           method = clinitTarget.getClinitMethod();
         }
-      }
+      } else {
 
       JsNameRef qualifier = null;
       JsExpression unnecessaryQualifier = null;
       JsExpression result = null;
       boolean isJsProperty = false;
       result = jsInvocation;
-
+//        if (program.typeOracle.isOrExtendsJsInterface(method.getEnclosingType(), false) &&
+//            method.getParams().size() == x.getArgs().size()) {
+//          // rewrite Single-Abstract-Method args as JsFunctions
+//          List<JParameter> params = method.getParams();
+//          List<JsExpression> arguments = jsInvocation.getArguments();
+//
+//          for (int i = 0; i < params.size(); i++) {
+//            JType paramType = params.get(i).getType();
+//            if (paramType instanceof JNonNullType) {
+//              paramType = ((JNonNullType) paramType).getUnderlyingType();
+//            }
+//            if (paramType instanceof JDeclaredType) {
+//              JMethod samMethod = program.getSingleAbstractMethod((JDeclaredType) paramType);
+//              if (samMethod != null) {
+//                JsExpression boundSamMethod = bindSingleAbstractMethodAsJsFunction(arguments.get(i), samMethod);
+//                arguments.set(i, boundSamMethod);
+//              }
+//            }
+//          }
+//        }
       if (method.isStatic()) {
         if (x.getInstance() != null) {
           unnecessaryQualifier = (JsExpression) pop(); // instance
@@ -1649,6 +1680,36 @@ public class GenerateJavaScriptAST {
         return propName;
       }
       return null;
+    }
+
+    private JsExpression bindSingleAbstractMethodAsJsFunction(JsExpression arg, JMethod samMethod) {
+      // Construct the following expression in steps
+      // arg => (_ = arg, _.@samMethod.bind(_); )
+
+      // _ = arg
+      JsExpression tempAsg = createAssignment(globalTemp.makeRef(arg.getSourceInfo()),
+          arg);
+
+      JsNameRef samFunc = polymorphicNames.get(samMethod).makeRef(arg.getSourceInfo());
+      JsName bindName = objectScope.declareName("bind");
+      bindName.setObfuscatable(false);
+
+      // bind()
+      JsInvocation bindInv = new JsInvocation(arg.getSourceInfo());
+      JsNameRef bindRef = bindName.makeRef(arg.getSourceInfo());
+      bindInv.setQualifier(bindRef);
+
+      // bind(_)
+      bindInv.getArguments().add(globalTemp.makeRef(arg.getSourceInfo()));
+
+      // samFunc.bind(_)
+      bindRef.setQualifier(samFunc);
+
+      // _.samFunc.bind(_)
+      samFunc.setQualifier(globalTemp.makeRef(arg.getSourceInfo()));
+
+      // (_ = arg, _.samFunc.bind(_))
+      return createCommaExpression(tempAsg, bindInv);
     }
 
     @Override
@@ -2491,6 +2552,7 @@ public class GenerateJavaScriptAST {
         jsProtoFieldRef.setQualifier(jsProtoClassRef);
         defineClassArguments.add(jsProtoClassRef);
       }
+
       JsExpression castMap = generateCastableTypeMap(x);
       defineClassArguments.add(castMap);
 
@@ -3386,7 +3448,7 @@ public class GenerateJavaScriptAST {
     }
   }
 
-  String getNameString(HasName hasName) {
+  public static String getNameString(HasName hasName) {
     String s = hasName.getName().replaceAll("_", "_1").replace('.', '_');
     return s;
   }
@@ -3438,8 +3500,7 @@ public class GenerateJavaScriptAST {
     return sb.toString();
   }
 
-
-  String mangleNameForPrivatePoly(JMethod x) {
+  public static String mangleNameForPrivatePoly(JMethod x) {
     assert x.isPrivate() && !x.isStatic();
     StringBuilder sb = new StringBuilder();
     /*

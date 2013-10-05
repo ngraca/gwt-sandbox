@@ -777,6 +777,10 @@ public class JTypeOracle implements Serializable {
     return results;
   }
 
+  public Set<JClassType> getImplementors(JInterfaceType type) {
+    return isImplementedMap.get(type);
+  }
+
   public Set<JReferenceType> getInstantiatedTypes() {
     return instantiatedTypes;
   }

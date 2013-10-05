@@ -34,34 +34,35 @@
   <condition property="gwt.tools.check" value="${env.GWT_TOOLS}" else="${gwt.root}/../tools">
     <isset property="env.GWT_TOOLS"/>
   </condition>
-  <property name="gwt.tools" location="${gwt.tools.check}"/>
-  <property name="gwt.tools.lib" location="${gwt.tools}/lib"/>
-  <property name="gwt.tools.antlib" location="${gwt.tools}/antlib"/>
-  <property name="gwt.tools.redist" location="${gwt.tools}/redist"/>
-  <property name="gwt.build" location="${gwt.root}/build"/>
-  <property name="gwt.build.out" location="${gwt.build}/out"/>
-  <property name="gwt.build.lib" location="${gwt.build}/lib"/>
-  <property name="gwt.build.jni" location="${gwt.build}/jni"/>
-  <property name="gwt.build.staging" location="${gwt.build}/staging"/>
-  <property name="gwt.build.dist" location="${gwt.build}/dist"/>
-  <!-- gwt.threadsPerProcessor supercedes gwt.threadCount unless set to 0 -->
-  <property name="gwt.threadsPerProcessor" value="1"/>
-  <property name="gwt.threadCount" value="1"/>
-  <property name="project.build" location="${gwt.build.out}/${project.tail}"/>
-  <property name="project.lib" location="${gwt.build.lib}/gwt-${ant.project.name}.jar"/>
-  <property name="project.jni" location="${gwt.build}/${project.tail}"/>
-  <property name="javac.out" location="${project.build}/bin"/>
-  <property name="javac.junit.out" location="${project.build}/bin-test"/>
-  <property name="javac.emma.out" location="${project.build}/bin-emma"/>
-  <property name="javac.debug" value="true"/>
-  <property name="javac.debuglevel" value="lines,vars,source"/>
-  <property name="javac.encoding" value="utf-8"/>
-  <property name="javac.source" value="1.6"/>
-  <property name="javac.target" value="1.6"/>
-  <property name="javac.nowarn" value="true"/>
-  <property name="junit.out" location="${project.build}/test"/>
-  <property name="emma.dir" value="${gwt.tools.redist}/emma"/>
-  <property name="emma.filter.exclude" value=""/>
+  <property name="gwt.tools" location="${gwt.tools.check}" />
+  <property name="gwt.tools.lib" location="${gwt.tools}/lib" />
+  <property name="gwt.tools.antlib" location="${gwt.tools}/antlib" />
+  <property name="gwt.tools.redist" location="${gwt.tools}/redist" />
+  <property name="gwt.build" location="${gwt.root}/build" />
+  <property name="gwt.build.out" location="${gwt.build}/out" />
+  <property name="gwt.build.lib" location="${gwt.build}/lib" />
+  <property name="gwt.build.jni" location="${gwt.build}/jni" />
+  <property name="gwt.build.staging" location="${gwt.build}/staging" />
+  <property name="gwt.build.dist" location="${gwt.build}/dist" />
+  <!-- gwt.threadsPerProcessor supercedes gwt.threadCount unless set to 0 --> 
+  <property name="gwt.threadsPerProcessor" value="1" />
+  <property name="gwt.threadCount" value="1" />
+  <property name="project.build" location="${gwt.build.out}/${project.tail}" />
+  <property name="project.lib" location="${gwt.build.lib}/gwt-${ant.project.name}.jar" />
+  <property name="project.jni" location="${gwt.build}/${project.tail}" />
+  <property name="javac.out" location="${project.build}/bin" />
+  <property name="javac.junit.out" location="${project.build}/bin-test" />
+  <property name="javac.emma.out" location="${project.build}/bin-emma" />
+  <property name="javac.debug" value="true" />
+  <property name="javac.debuglevel" value="lines,vars,source" />
+  <property name="javac.encoding" value="utf-8" />
+  <property name="javac.source" value="1.8" />
+  <property name="javac.target" value="1.8" />
+  <property name="javac.nowarn" value="true" />
+  <property name="junit.out" location="${project.build}/test" />
+  <property name="emma.dir" value="${gwt.tools.redist}/emma" />
+  <property name="emma.filter.exclude" value="" />
+  <property name="eclipse.version" value="3.10.0.v20140604-1726" />
 
   <!-- Sanity check -->
   <available file="${gwt.tools}" type="dir" property="gwt.tools.exists"/>

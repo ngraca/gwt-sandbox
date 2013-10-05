@@ -37,7 +37,7 @@ package com.google.gwt.dev.asm;
  * opcodes are therefore not defined in this interface. Likewise for LDC,
  * automatically replaced by LDC_W or LDC2_W when necessary, WIDE, GOTO_W and
  * JSR_W.
- * 
+ *
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -56,6 +56,7 @@ public interface Opcodes {
     int V1_5 = 0 << 16 | 49;
     int V1_6 = 0 << 16 | 50;
     int V1_7 = 0 << 16 | 51;
+    int V1_8 = 0 << 16 | 52;
 
     // access flags
 

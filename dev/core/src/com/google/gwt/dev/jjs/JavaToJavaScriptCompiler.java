@@ -77,6 +77,7 @@ import com.google.gwt.dev.jjs.impl.MakeCallsStatic;
 import com.google.gwt.dev.jjs.impl.MethodCallSpecializer;
 import com.google.gwt.dev.jjs.impl.MethodCallTightener;
 import com.google.gwt.dev.jjs.impl.MethodInliner;
+import com.google.gwt.dev.jjs.impl.MixinDefenderMethods;
 import com.google.gwt.dev.jjs.impl.OptimizerStats;
 import com.google.gwt.dev.jjs.impl.Pruner;
 import com.google.gwt.dev.jjs.impl.RecordRebinds;
@@ -959,6 +960,8 @@ public abstract class JavaToJavaScriptCompiler {
 
       // Free up memory.
       rpo.clear();
+      jprogram.typeOracle.computeBeforeAST();
+      MixinDefenderMethods.exec(jprogram);
       jprogram.typeOracle.computeBeforeAST();
       return compilationState;
     }

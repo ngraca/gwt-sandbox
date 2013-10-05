@@ -1519,7 +1519,12 @@ public class UnifyAst {
       }
       assert !type.isExternal();
     }
-
+    // should never happen, but does for concrete lambda overrides!
+    // TODO(cromwellian) find out why
+    // James: This may be fixed by GwtAstBuilder returning class literal correctly
+    if (program.getFromTypeMap(type.getName()) != type) {
+        return program.getFromTypeMap(type.getName());
+    }
     return type;
   }
 
