@@ -96,6 +96,7 @@ import com.google.gwt.dev.jjs.impl.TypeTightener;
 import com.google.gwt.dev.jjs.impl.UnifyAst;
 import com.google.gwt.dev.jjs.impl.codesplitter.CodeSplitters;
 import com.google.gwt.dev.jjs.impl.codesplitter.MultipleDependencyGraphRecorder;
+import com.google.gwt.dev.jjs.impl.codesplitter.CodeSplitter;
 import com.google.gwt.dev.jjs.impl.codesplitter.ReplaceRunAsyncs;
 import com.google.gwt.dev.jjs.impl.gflow.DataflowOptimizer;
 import com.google.gwt.dev.js.BaselineCoverageGatherer;
@@ -569,6 +570,9 @@ public abstract class JavaToJavaScriptCompiler {
       for (SyntheticArtifact soycArtifact : soycArtifacts) {
         soycArtifact.setVisibility(Visibility.Private);
       }
+
+      ImplementClassLiteralsAsFields.exec(jprogram);
+      MixinDefenderMethods.exec(jprogram);
 
       if (!htmlReportsDisabled && sizeBreakdowns != null) {
         Event generateCompileReport = SpeedTracerLogger.start(
