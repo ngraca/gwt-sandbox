@@ -565,9 +565,25 @@ public abstract class JavaToJavaScriptCompiler {
       if (dependencies != null) {
         soycArtifacts.add(dependencies);
       }
+      // Compute all super type/sub type info
+      jprogram.typeOracle.computeBeforeAST();
       MixinDefenderMethods.exec(jprogram);
+      jprogram.typeOracle.computeBeforeAST();
 
-        // (3) Perform Java AST normalizations.
+      Memory.maybeDumpMemory("AstOnly");
+      AstDumper.maybeDumpAST(jprogram);
+
+      // See if we should run the EnumNameObfuscator
+      if (module != null) {
+        ConfigurationProperty enumNameObfuscationProp =
+            (ConfigurationProperty) module.getProperties().find(ENUM_NAME_OBFUSCATION_PROPERTY);
+        if (enumNameObfuscationProp != null
+            && Boolean.parseBoolean(enumNameObfuscationProp.getValue())) {
+          EnumNameObfuscator.exec(jprogram, logger);
+        }
+      }
+
+      // (3) Perform Java AST normalizations.
       FixAssignmentsToUnboxOrCast.exec(jprogram);
 
       /*
