@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
 
 /**
  * AbstractResource serves the same purpose as java
@@ -127,6 +128,11 @@ public abstract class AbstractResource {
     private Map<String, PluralForm[]> pluralForms = new HashMap<String, PluralForm[]>();
 
     private Set<AbstractResource> set = new HashSet<AbstractResource>();
+
+    @Override
+    public Spliterator<AbstractResource> spliterator() {
+          return Set.super.spliterator();
+    }
 
     @Override
     public boolean add(AbstractResource element) {
