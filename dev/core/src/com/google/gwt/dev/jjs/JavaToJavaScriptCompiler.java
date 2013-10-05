@@ -726,6 +726,7 @@ public class JavaToJavaScriptCompiler {
       }
 
       ImplementClassLiteralsAsFields.exec(jprogram);
+      MixinDefenderMethods.exec(jprogram);
 
       /*
        * 4) Possibly optimize some.
