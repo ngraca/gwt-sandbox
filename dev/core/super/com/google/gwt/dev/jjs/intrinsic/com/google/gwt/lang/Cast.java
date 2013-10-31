@@ -26,7 +26,8 @@ import com.google.gwt.core.client.JavaScriptObject;
 final class Cast {
 
   static native boolean canCast(Object src, int dstId) /*-{
-    return src.@java.lang.Object::castableTypeMap && !!src.@java.lang.Object::castableTypeMap[dstId];
+    return src.@java.lang.Object::castableTypeMap && !!src.@java.lang.Object::castableTypeMap[dstId]
+        || dstId == 1 && typeof(src.valueOf()) == 'string';
   }-*/;
 
   /**
@@ -34,7 +35,8 @@ final class Cast {
    * context.
    */
   static native boolean canCastUnsafe(Object src, int dstId) /*-{
-    return src.@java.lang.Object::castableTypeMap && src.@java.lang.Object::castableTypeMap[dstId];
+    return src.@java.lang.Object::castableTypeMap && src.@java.lang.Object::castableTypeMap[dstId]
+        || dstId == 1 && typeof(src.valueOf()) == 'string';
   }-*/;
 
   static native String charToString(char x) /*-{

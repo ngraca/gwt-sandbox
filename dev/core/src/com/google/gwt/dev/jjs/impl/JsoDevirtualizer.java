@@ -17,23 +17,7 @@ package com.google.gwt.dev.jjs.impl;
 
 import com.google.gwt.dev.jjs.SourceInfo;
 import com.google.gwt.dev.jjs.SourceOrigin;
-import com.google.gwt.dev.jjs.ast.AccessModifier;
-import com.google.gwt.dev.jjs.ast.Context;
-import com.google.gwt.dev.jjs.ast.JClassType;
-import com.google.gwt.dev.jjs.ast.JConditional;
-import com.google.gwt.dev.jjs.ast.JDeclaredType;
-import com.google.gwt.dev.jjs.ast.JLocal;
-import com.google.gwt.dev.jjs.ast.JLocalRef;
-import com.google.gwt.dev.jjs.ast.JMethod;
-import com.google.gwt.dev.jjs.ast.JMethodBody;
-import com.google.gwt.dev.jjs.ast.JMethodCall;
-import com.google.gwt.dev.jjs.ast.JModVisitor;
-import com.google.gwt.dev.jjs.ast.JParameter;
-import com.google.gwt.dev.jjs.ast.JParameterRef;
-import com.google.gwt.dev.jjs.ast.JProgram;
-import com.google.gwt.dev.jjs.ast.JReturnStatement;
-import com.google.gwt.dev.jjs.ast.JType;
-import com.google.gwt.dev.jjs.ast.JTypeOracle;
+import com.google.gwt.dev.jjs.ast.*;
 import com.google.gwt.dev.jjs.ast.js.JMultiExpression;
 import com.google.gwt.dev.jjs.impl.MakeCallsStatic.CreateStaticImplsVisitor;
 
@@ -58,7 +42,8 @@ public class JsoDevirtualizer {
      * <ol>
      * <li>a dual dispatch interface</li>
      * <li>a single dispatch trough single-jso interface</li>
-     * <li>a java.lang.Object override from JavaScriptObject</li>
+     * <li>a java.lang.Object override from JavaScriptObject, Array, or String</li>
+     * <li>an override of one of the methods of the interfaces on String.</li>
      * <li>a regular dispatch (no JSOs involved or static JSO call)</li>
      * <li>in draftMode, a 'static' virtual JSO call that hasn't been made
      * static yet.</li>
@@ -78,9 +63,16 @@ public class JsoDevirtualizer {
       }
 
       JType instanceType = x.getInstance().getType();
-      // if the instance can't possibly be a JSO, don't devirtualize
+      // if the instance can't possibly be a JSO, String, Array,
+      // or an interface implemented String, don't devirtualize
       if (instanceType != program.getTypeJavaLangObject()
-          && !program.typeOracle.canBeJavaScriptObject(instanceType)) {
+          && !program.typeOracle.canBeJavaScriptObject(instanceType)
+          // not a string
+          && instanceType != program.getTypeJavaLangString()
+          // not an array
+//          && !(instanceType instanceof JArrayType)
+          // not an interface of String, e.g. CharSequence or Comparable
+          && !program.getTypeJavaLangString().getImplements().contains(instanceType)) {
         return;
       }
 
@@ -115,7 +107,20 @@ public class JsoDevirtualizer {
           polyMethodToJsoMethod.put(method, newMethod);
         } else {
           // else this method isn't overriden by JavaScriptObject
-          assert false : "Object method not overriden by JavaScriptObject";
+          assert false : "Object method not overridden by JavaScriptObject";
+          return;
+        }
+      } else if (targetType == program.getTypeJavaLangString()
+          || program.getTypeJavaLangString().getImplements().contains(targetType)) {
+        // it's a java.lang.String method
+        JMethod overridingMethod = findOverridingMethod(method, program.getTypeJavaLangString());
+        if (overridingMethod != null) {
+          JMethod jsoStaticImpl = getStaticImpl(overridingMethod);
+          newMethod = getOrCreateDevirtualMethod(x, jsoStaticImpl);
+          polyMethodToJsoMethod.put(method, newMethod);
+        } else {
+          // else this method isn't overriden by JavaScriptObject
+          assert false : "String interface method not overridden by String";
           return;
         }
       } else {
@@ -251,7 +256,7 @@ public class JsoDevirtualizer {
 
     // Setup parameters.
     JParameter thisParam =
-        JProgram.createParameter(sourceInfo, "this$static", program.getTypeJavaLangObject(), true,
+        JProgram.createParameter(sourceInfo, "this$static", polyMethod.getEnclosingType(), true,
             true, newMethod);
     for (JParameter oldParam : polyMethod.getParams()) {
       JProgram.createParameter(sourceInfo, oldParam.getName(), oldParam.getType(), true, false,
