@@ -70,7 +70,7 @@ public class JsoDevirtualizer {
           // not a string
           && instanceType != program.getTypeJavaLangString()
           // not an array
-//          && !(instanceType instanceof JArrayType)
+          && !(instanceType instanceof JArrayType)
           // not an interface of String, e.g. CharSequence or Comparable
           && !program.getTypeJavaLangString().getImplements().contains(instanceType)) {
         return;
@@ -133,10 +133,7 @@ public class JsoDevirtualizer {
     @Override
     public boolean visit(JMethod x, Context ctx) {
       // Don't rewrite the polymorphic call inside of the devirtualizing method!
-      if (polyMethodToDevirtualMethods.containsValue(x)) {
-        return false;
-      }
-      return true;
+      return !polyMethodToDevirtualMethods.containsValue(x);
     }
   }
 
@@ -151,9 +148,14 @@ public class JsoDevirtualizer {
   protected Map<JMethod, JMethod> polyMethodToJsoMethod = new HashMap<JMethod, JMethod>();
 
   /**
-   * Contains the Cast.isJavaObject method.
+   * Contains the Cast.isNonStringJavaObject method.
    */
-  private final JMethod isJavaObjectMethod;
+  private final JMethod isNonStringJavaObjectNotArrayMethod;
+
+  /**
+   * Contains the Cast.isJavaString method.
+   */
+  private final JMethod isJavaStringMethod;
 
   /**
    * Key is the method signature, value is the number of unique instances with
@@ -174,7 +176,9 @@ public class JsoDevirtualizer {
 
   private JsoDevirtualizer(JProgram program) {
     this.program = program;
-    this.isJavaObjectMethod = program.getIndexedMethod("Cast.isJavaObject");
+    this.isNonStringJavaObjectNotArrayMethod =
+        program.getIndexedMethod("Cast.isNonStringJavaObjectNotArray");
+    this.isJavaStringMethod = program.getIndexedMethod("Cast.isJavaString");
     staticImplCreator = new CreateStaticImplsVisitor(program);
   }
 
@@ -210,10 +214,12 @@ public class JsoDevirtualizer {
    * dispatch.
    * 
    * <pre>
-    * static boolean equals__devirtual$(Object this, Object other) {
-    *   return Cast.isJavaObject(this) ? this.equals(other) : JavaScriptObject.equals$(this, other);
-    * }
-    * </pre>
+   * static boolean equals__devirtual$(Object this, Object other) {
+   *   return Cast.isJavaString() ? String.equals(other) :
+   *     Cast.isNonStringJavaObject(this) ?
+   *       this.equals(other) : JavaScriptObject.equals$(this, other);
+   * }
+   * </pre>
    */
   private JMethod getOrCreateDevirtualMethod(JMethodCall polyMethodCall, JMethod jsoImpl) {
     JMethod polyMethod = polyMethodCall.getTarget();
@@ -277,8 +283,8 @@ public class JsoDevirtualizer {
         new JParameterRef(sourceInfo, thisParam)).getExpr());
 
     // Build from bottom up.
-    // isJavaObject(temp)
-    JMethodCall condition = new JMethodCall(sourceInfo, null, isJavaObjectMethod);
+    // isJavaObjectNotArray(temp)
+    JMethodCall condition = new JMethodCall(sourceInfo, null, isNonStringJavaObjectNotArrayMethod);
     condition.addArg(new JLocalRef(sourceInfo, temp));
 
     // temp.method(args)
@@ -299,11 +305,34 @@ public class JsoDevirtualizer {
       }
     }
 
-    // isJavaObject(temp) ? temp.method(args) : jso$method(temp, args)
+    // isJavaObjectNotArray(temp) ? temp.method(args) : jso$method(temp, args)
     JConditional conditional =
         new JConditional(sourceInfo, polyMethod.getType(), condition, thenValue, elseValue);
 
-    multi.exprs.add(conditional);
+    // Cast.isJavaString(temp) ? String.method(args) : conditional
+    JMethodCall stringCondition = new JMethodCall(sourceInfo, null, isJavaStringMethod);
+    stringCondition.addArg(new JLocalRef(sourceInfo, temp));
+    JMethod stringMethod = findOverridingMethod(polyMethod, program.getTypeJavaLangString());
+
+    JExpression stringThenValue;
+    // special case String.getClass() since there is no ___clazz field
+    if (polyMethod.getName().equals("getClass")) {
+      stringThenValue = new JFieldRef(sourceInfo, null, program.getClassLiteralField(program
+          .getTypeJavaLangString()), program.getTypeJavaLangClass());
+    } else {
+      JMethodCall stringThenValueCall = new JMethodCall(sourceInfo, null,
+          getStaticImpl(stringMethod));
+      stringThenValueCall.addArg(new JLocalRef(sourceInfo, temp));
+      for (JParameter param : newMethod.getParams()) {
+        if (param != thisParam) {
+          stringThenValueCall.addArg(new JParameterRef(sourceInfo, param));
+        }
+      }
+      stringThenValue = stringThenValueCall;
+    }
+    JConditional stringConditional = new JConditional(sourceInfo, polyMethod.getType(),
+        stringCondition, stringThenValue, conditional);
+    multi.exprs.add(stringConditional);
 
     JReturnStatement returnStatement = new JReturnStatement(sourceInfo, multi);
     ((JMethodBody) newMethod.getBody()).getBlock().addStmt(returnStatement);
