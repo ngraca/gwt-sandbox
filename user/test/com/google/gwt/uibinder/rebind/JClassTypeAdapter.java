@@ -328,7 +328,7 @@ public class JClassTypeAdapter {
    * @param method the method or constructor to which the parameters belong
    * @return an array of GWT parameters
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   protected JParameter[] adaptParameters(Class<?>[] parameterTypes,
       Annotation[][] parameterAnnotations, JAbstractMethod method) {
     JParameter[] parameters = new JParameter[parameterTypes.length];
@@ -365,7 +365,7 @@ public class JClassTypeAdapter {
             }
           });
 
-      expect(parameter.getAnnotation(isA(Class.class))).andStubAnswer(
+      expect(parameter.getAnnotation(EasyMock.<Class>isA(Class.class))).andStubAnswer(
           new IAnswer<Annotation>() {
             public Annotation answer() throws Throwable {
               Class<? extends Annotation> annotationClass =
@@ -447,7 +447,7 @@ public class JClassTypeAdapter {
    * @param realElement the java element which contains annotations
    * @param element the mock GWT element which contains annotations
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   private void addAnnotationBehaviour(final AnnotatedElement realElement,
       final HasAnnotations element) {
     expect(element.isAnnotationPresent(isA(Class.class))).andStubAnswer(
@@ -459,7 +459,7 @@ public class JClassTypeAdapter {
           }
         });
 
-    expect(element.getAnnotation(isA(Class.class))).andStubAnswer(
+    expect(element.getAnnotation(EasyMock.<Class>isA(Class.class))).andStubAnswer(
         new IAnswer<Annotation>() {
           public Annotation answer() throws Throwable {
             Class<? extends Annotation> annotationClass =
