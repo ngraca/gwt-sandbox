@@ -1,0 +1,6 @@
+build
+eclipse/user/bin
+elemental/idl/database
+elemental/idl/generated
+elemental/idl/scripts/*.pyc
+elemental/idl/templates/*.darttemplate
