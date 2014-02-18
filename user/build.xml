@@ -63,6 +63,7 @@
     <pathelement location="${gwt.tools.lib}/objenesis/objenesis-1.2.jar"/>
     <pathelement location="${gwt.tools.lib}/easymock/easymock-3.0.jar"/>
     <pathelement location="${gwt.tools.lib}/objectweb/asm-3.1.jar"/>
+    <pathelement location="${gwt.tools.lib}/objectweb/asm-commons-3.1.jar"/>
     <pathelement location="${gwt.tools.lib}/javax/validation/validation-api-1.0.0.GA.jar" />
     <pathelement location="${gwt.tools.lib}/javax/validation/validation-api-1.0.0.GA-sources.jar" />
     <pathelement location="${gwt.tools.lib}/hibernate/validator/hibernate-validator-4.1.0.Final.jar" />

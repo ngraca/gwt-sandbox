@@ -15,19 +15,6 @@
  */
 package com.google.gwt.dev.javac;
 
-import com.google.gwt.core.ext.TreeLogger;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
-import com.google.gwt.dev.jjs.ast.JDeclaredType;
-import com.google.gwt.dev.jjs.ast.JProgram;
-import com.google.gwt.dev.util.DiskCache;
-import com.google.gwt.dev.util.Util;
-import com.google.gwt.dev.util.collect.HashMap;
-
-import org.eclipse.jdt.core.compiler.CategorizedProblem;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -41,6 +28,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.eclipse.jdt.core.compiler.CategorizedProblem;
+
+import com.google.gwt.core.ext.TreeLogger;
+import com.google.gwt.dev.asm.ClassReader;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
+import com.google.gwt.dev.jjs.ast.JDeclaredType;
+import com.google.gwt.dev.jjs.ast.JProgram;
+import com.google.gwt.dev.util.DiskCache;
+import com.google.gwt.dev.util.Util;
+import com.google.gwt.dev.util.collect.HashMap;
 
 /**
  * Encapsulates the state of a single active compilation unit in a particular
@@ -65,7 +65,6 @@ public abstract class CompilationUnit implements Serializable {
       int sawCode;
 
       public AnonymousClassVisitor() {
-
         this.mv = new MethodVisitor(Opcodes.ASM4, this.mv) {
           @Override
           public void visitCode() {

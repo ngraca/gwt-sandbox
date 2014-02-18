@@ -13,15 +13,29 @@
  */
 package com.google.gwt.dev.javac;
 
+import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.typeinfo.JPrimitiveType;
 import com.google.gwt.core.ext.typeinfo.JType;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.signature.SignatureReader;
-import org.objectweb.asm.util.TraceClassVisitor;
+import com.google.gwt.dev.asm.ClassReader;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.Type;
+import com.google.gwt.dev.asm.signature.SignatureReader;
+import com.google.gwt.dev.asm.util.TraceClassVisitor;
 import com.google.gwt.dev.javac.asm.CollectAnnotationData;
 import com.google.gwt.dev.javac.asm.CollectAnnotationData.AnnotationData;
 import com.google.gwt.dev.javac.asm.CollectClassData;
@@ -51,20 +65,6 @@ import com.google.gwt.dev.util.Name.InternalName;
 import com.google.gwt.dev.util.log.speedtracer.CompilerEventType;
 import com.google.gwt.dev.util.log.speedtracer.SpeedTracerLogger;
 import com.google.gwt.dev.util.log.speedtracer.SpeedTracerLogger.Event;
-
-import java.io.PrintWriter;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Builds or rebuilds a {@link com.google.gwt.core.ext.typeinfo.TypeOracle} from a set of

@@ -16,17 +16,16 @@
 
 package com.google.gwt.dev.javac.asmbridge;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.FieldVisitor;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
 
 /**
  * This class is a replacement of the EmptyVisitor class in ASM 3.1, no longer provided in ASM 4.
  */
 public class EmptyVisitor extends ClassVisitor {
-
   protected AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM4) {
 
     @Override
@@ -87,4 +86,5 @@ public class EmptyVisitor extends ClassVisitor {
       String[] exceptions) {
     return mv;
   }
+
 }

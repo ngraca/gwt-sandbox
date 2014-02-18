@@ -84,6 +84,7 @@ import com.google.gwt.dev.jjs.impl.LongEmulationNormalizer;
 import com.google.gwt.dev.jjs.impl.MakeCallsStatic;
 import com.google.gwt.dev.jjs.impl.MethodCallTightener;
 import com.google.gwt.dev.jjs.impl.MethodInliner;
+import com.google.gwt.dev.jjs.impl.MixinDefenderMethods;
 import com.google.gwt.dev.jjs.impl.OptimizerStats;
 import com.google.gwt.dev.jjs.impl.PostOptimizationCompoundAssignmentNormalizer;
 import com.google.gwt.dev.jjs.impl.Pruner;
@@ -565,38 +566,6 @@ public abstract class JavaToJavaScriptCompiler {
       if (dependencies != null) {
         soycArtifacts.add(dependencies);
       }
-      // Compute all super type/sub type info
-      jprogram.typeOracle.computeBeforeAST();
-      MixinDefenderMethods.exec(jprogram);
-      jprogram.typeOracle.computeBeforeAST();
-
-      Memory.maybeDumpMemory("AstOnly");
-      AstDumper.maybeDumpAST(jprogram);
-
-      // See if we should run the EnumNameObfuscator
-      if (module != null) {
-        ConfigurationProperty enumNameObfuscationProp =
-            (ConfigurationProperty) module.getProperties().find(ENUM_NAME_OBFUSCATION_PROPERTY);
-        if (enumNameObfuscationProp != null
-            && Boolean.parseBoolean(enumNameObfuscationProp.getValue())) {
-          EnumNameObfuscator.exec(jprogram, logger);
-        }
-      }
-
-      // (3) Perform Java AST normalizations.
-      FixAssignmentsToUnboxOrCast.exec(jprogram);
-
-      /*
-       * TODO: If we defer this until later, we could maybe use the results of
-       * the assertions to enable more optimizations.
-       */
-      if (options.isEnableAssertions()) {
-        // Turn into assertion checking calls.
-        AssertionNormalizer.exec(jprogram);
-      } else {
-        // Remove all assert statements.
-        AssertionRemover.exec(jprogram);
-      }
 
       // Set all of the main SOYC artifacts private.
       for (SyntheticArtifact soycArtifact : soycArtifacts) {
@@ -918,6 +887,10 @@ public abstract class JavaToJavaScriptCompiler {
         CompilationState compilationState =
             constructJavaAst(entryPointTypeNames, additionalRootTypes, allRootTypes);
 
+
+        MixinDefenderMethods.exec(jprogram);
+        jprogram.typeOracle.computeBeforeAST();
+        
         // TODO(stalcup): hide metrics gathering in a callback or subclass
         logTypeOracleMetrics(precompilationMetrics, compilationState);
         Memory.maybeDumpMemory("AstOnly");
@@ -938,6 +911,7 @@ public abstract class JavaToJavaScriptCompiler {
           CodeSplitters.pickInitialLoadSequence(logger, jprogram, module.getProperties());
         }
         ImplementClassLiteralsAsFields.exec(jprogram);
+
 
         // (5) Optimize the unresolved Java AST
         optimizeJava(singlePermutation);

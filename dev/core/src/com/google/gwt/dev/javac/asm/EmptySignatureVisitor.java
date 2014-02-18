@@ -15,8 +15,9 @@
  */
 package com.google.gwt.dev.javac.asm;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.signature.SignatureVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.signature.SignatureVisitor;
+
 
 /**
  * Signature visitor that does nothing.

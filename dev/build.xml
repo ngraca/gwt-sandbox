@@ -53,9 +53,13 @@
     <outofdate> <!-- saves rescanning all the source jars' contents -->
       <sourcefiles>
         <fileset dir="${gwt.tools.lib}">
+          <include name="objectweb/asm-3.1.jar" />
+          <include name="objectweb/asm-commons-3.1.jar" />
+          <include name="objectweb/asm-util-3.1.jar" />
+
           <include name="apache/tapestry-util-text-4.0.2.jar" />
           <include name="apache/ant-1.6.5.jar" />
-          <include name="eclipse/org.eclipse.jdt.core_3.8.3.v20130121-145325.jar" />
+          <include name="eclipse/org.eclipse.jdt.core-3.9.1-SNAPSHOT.jar" />
           <include name="eclipse/jdtCompilerAdapter-3.8.3.v20130121-145325.jar" />
           <include name="guava/guava-15.0/guava-15.0-rebased.jar" />
           <include name="icu4j/50.1.1/icu4j.jar" />
@@ -101,9 +105,12 @@
       </targetfiles>
       <sequential>
         <gwt.jar destfile="${alldeps.jar}">
+          <zipfileset src="${gwt.tools.lib}/objectweb/asm-3.1.jar" />
+          <zipfileset src="${gwt.tools.lib}/objectweb/asm-commons-3.1.jar" />
+          <zipfileset src="${gwt.tools.lib}/objectweb/asm-util-3.1.jar" />
           <zipfileset src="${gwt.tools.lib}/apache/tapestry-util-text-4.0.2.jar" />
           <zipfileset src="${gwt.tools.lib}/apache/ant-1.6.5.jar" />
-          <zipfileset src="${gwt.tools.lib}/eclipse/org.eclipse.jdt.core_3.8.3.v20130121-145325.jar" />
+          <zipfileset src="${gwt.tools.lib}/eclipse/org.eclipse.jdt.core-3.9.1-SNAPSHOT.jar" />
           <zipfileset src="${gwt.tools.lib}/eclipse/jdtCompilerAdapter-3.8.3.v20130121-145325.jar" />
           <zipfileset src="${gwt.tools.lib}/guava/guava-15.0/guava-15.0-rebased.jar" />
           <zipfileset src="${gwt.tools.lib}/icu4j/50.1.1/icu4j.jar" />
@@ -178,10 +185,13 @@
       <include name="com/google/gwt/util/**"/>
       <include name="org/eclipse/jdt/**"/>
       <classpath>
+          <pathelement location="${gwt.tools.lib}/objectweb/asm-3.1.jar" />
+          <pathelement location="${gwt.tools.lib}/objectweb/asm-commons-3.1.jar" />
+          <pathelement location="${gwt.tools.lib}/objectweb/asm-util-3.1.jar" />
           <pathelement location="${gwt.tools.lib}/apache/ant-1.6.5.jar" />
           <pathelement location="${gwt.tools.lib}/apache/commons/commons-collections-3.2.1.jar" />
-          <pathelement location="${gwt.tools.lib}/eclipse/org.eclipse.jdt.core_3.8.3.v20130121-145325.jar" />
-          <pathelement location="${gwt.tools.lib}/eclipse/jdtCompilerAdapter-3.8.3.v20130121-145325.jar" />
+          <pathelement location="${gwt.tools.lib}/eclipse/org.eclipse.jdt.core-3.9.1-SNAPSHOT.jar" />
+          <pathelement location="${gwt.tools.lib}/eclipse/jdtCompilerAdapter-3.9.1-SNAPSHOT.jar" />
           <pathelement location="${gwt.tools.lib}/guava/guava-15.0/guava-15.0-rebased.jar" />
           <pathelement location="${gwt.tools.lib}/jscomp/20131118/compiler-rebased.jar" />
           <pathelement location="${gwt.tools.lib}/jscomp/20131118/sourcemap-rebased.jar" />

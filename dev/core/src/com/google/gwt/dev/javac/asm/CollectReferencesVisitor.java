@@ -15,17 +15,18 @@
  */
 package com.google.gwt.dev.javac.asm;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
-import org.objectweb.asm.signature.SignatureReader;
-import org.objectweb.asm.signature.SignatureVisitor;
-
 import java.util.HashSet;
 import java.util.Set;
+
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.FieldVisitor;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.Type;
+import com.google.gwt.dev.asm.signature.SignatureReader;
+import com.google.gwt.dev.asm.signature.SignatureVisitor;
+import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
 
 /**
  * Collect all the types which are referenced by a particular class.
@@ -122,6 +123,7 @@ public class CollectReferencesVisitor extends EmptyVisitor {
   CollectReferencesVisitor()
   {
     this.av = new AnnotationVisitor(Opcodes.ASM4, this.av) {
+      
       @Override
       public void visitEnum(String name, String desc, String value) {
         addTypeIfClass(desc);
@@ -131,6 +133,17 @@ public class CollectReferencesVisitor extends EmptyVisitor {
         // don't mark this annotation as a reference or its arguments, so we can
         // handle binary-only annotations.
         // TODO(jat): consider implications of updating the annotation class
+      }
+      @Override
+      public AnnotationVisitor visitAnnotation(String arg0, String arg1) {
+        return av;
+      }
+      @Override
+      public AnnotationVisitor visitArray(String arg0) {
+        return av;
+      }
+      @Override
+      public void visitEnd() {
       }
 
     };

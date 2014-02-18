@@ -45,7 +45,7 @@ public class DynamicPropertyOracle implements PropertyOracle {
   private static SelectionProperty createSelectionProperty(
       String value, BindingProperty bindingProperty) {
     SortedSet<String> possibleValues =
-        Sets.newTreeSet(Arrays.asList(bindingProperty.getDefinedValues()));
+        Sets.<String>newTreeSet(Arrays.asList(bindingProperty.getDefinedValues()));
     return new DefaultSelectionProperty(value, bindingProperty.getFallback(),
         bindingProperty.getName(), possibleValues, bindingProperty.getFallbackValuesMap());
   }

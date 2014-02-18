@@ -15,14 +15,14 @@
  */
 package com.google.gwt.dev.shell.rewrite;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
-
 import java.lang.annotation.Annotation;
+
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.ClassReader;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.Type;
+import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
 
 /**
  * A simple ClassAdapter that determines if a specific annotation is declared on

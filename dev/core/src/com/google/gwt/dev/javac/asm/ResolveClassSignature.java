@@ -15,18 +15,18 @@
  */
 package com.google.gwt.dev.javac.asm;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.typeinfo.JType;
-import org.objectweb.asm.signature.SignatureVisitor;
+import com.google.gwt.dev.asm.signature.SignatureVisitor;
 import com.google.gwt.dev.javac.Resolver;
 import com.google.gwt.dev.javac.TypeParameterLookup;
 import com.google.gwt.dev.javac.typemodel.JClassType;
 import com.google.gwt.dev.javac.typemodel.JRealClassType;
 import com.google.gwt.dev.javac.typemodel.JTypeParameter;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Signature visitor that resolves all the type variables and their bounds for a

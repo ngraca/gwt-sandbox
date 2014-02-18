@@ -17,5 +17,3 @@
 // CHECKSTYLE_OFF
 
 package com.google.gwt.dev.jjs.test.unusedimports;
-
-import javax.annotation.ParametersAreNonnullByDefault;

@@ -121,7 +121,7 @@ public abstract class AbstractResource {
 
     @Override
     public Spliterator<AbstractResource> spliterator() {
-          return Set.super.spliterator();
+          return super.spliterator();
     }
 
     @Override

@@ -391,8 +391,8 @@ public class LibraryJavaToJavaScriptCompilerTest extends TestCase {
 
     // Builds property provider classes and a property provider registrator to register them.
     precompiler.buildPropertyProviderRegistrator(allRootTypes,
-        Sets.newTreeSet(Lists.newArrayList(userAgentProperty, flavorProperty)),
-        Sets.newTreeSet(Lists.newArrayList(emulateStackProperty)));
+        Sets.<BindingProperty>newTreeSet(Lists.newArrayList(userAgentProperty, flavorProperty)),
+        Sets.<ConfigurationProperty>newTreeSet(Lists.newArrayList(emulateStackProperty)));
 
     // JProgram was informed of the newly created PropertyProviderRegistrator type and its source
     // name reflects the name of the module currently being processed.

@@ -15,17 +15,48 @@
  */
 package com.google.web.bindery.requestfactory.server;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+
+import javax.annotation.processing.Processor;
+
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.Attribute;
+import com.google.gwt.dev.asm.ClassReader;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.ClassWriter;
+import com.google.gwt.dev.asm.FieldVisitor;
+import com.google.gwt.dev.asm.Label;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.Type;
+import com.google.gwt.dev.asm.commons.Method;
 import com.google.gwt.dev.util.Name;
 import com.google.gwt.dev.util.Name.SourceOrBinaryName;
 import com.google.gwt.dev.util.Util;
@@ -63,37 +94,6 @@ import com.google.web.bindery.requestfactory.shared.ValueProxy;
 import com.google.web.bindery.requestfactory.shared.WriteOperation;
 import com.google.web.bindery.requestfactory.vm.RequestFactorySource;
 import com.google.web.bindery.requestfactory.vm.testing.UrlRequestTransport;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-
-import javax.annotation.processing.Processor;
 
 /**
  * Used to extract RequestFactory client jars from {@code gwt-user.jar}.
@@ -349,8 +349,8 @@ public class RequestFactoryJarExtractor {
     private final AnnotationVisitor av;
 
     public AnnotationProcessor(String sourceType, AnnotationVisitor av) {
-      // TODO(rluble): should we chain av to super here?
       super(Opcodes.ASM4);
+      // TODO(rluble): should we chain av to super here?
       this.sourceType = sourceType;
       this.av = av;
     }
@@ -535,7 +535,7 @@ public class RequestFactoryJarExtractor {
     }
   }
 
-  private class MethodProcessor extends MethodVisitor {
+  private class MethodProcessor extends MethodVisitor{
     private final String sourceType;
 
     public MethodProcessor(String sourceType, MethodVisitor mv) {

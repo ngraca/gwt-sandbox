@@ -365,7 +365,7 @@ public class JClassTypeAdapter {
             }
           });
 
-      expect(parameter.getAnnotation(isA(Class.class))).andStubAnswer(
+      expect(parameter.getAnnotation(EasyMock.<Class>isA(Class.class))).andStubAnswer(
           new IAnswer<Annotation>() {
             public Annotation answer() throws Throwable {
               Class<? extends Annotation> annotationClass =
@@ -459,7 +459,7 @@ public class JClassTypeAdapter {
           }
         });
 
-    expect(element.getAnnotation(isA(Class.class))).andStubAnswer(
+    expect(element.getAnnotation(EasyMock.<Class>isA(Class.class))).andStubAnswer(
         new IAnswer<Annotation>() {
           public Annotation answer() throws Throwable {
             Class<? extends Annotation> annotationClass =

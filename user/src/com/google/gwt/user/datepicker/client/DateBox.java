@@ -36,7 +36,7 @@ import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.i18n.shared.DateTimeFormat;
 import com.google.gwt.i18n.client.DateTimeFormat.PredefinedFormat;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HasEnabled;
@@ -94,7 +94,7 @@ public class DateBox extends Composite implements HasEnabled, HasValue<Date>,
      */
     @SuppressWarnings("deprecation")
     public DefaultFormat() {
-      dateTimeFormat = DateTimeFormat.getFormat(PredefinedFormat.DATE_TIME_MEDIUM);
+      dateTimeFormat = com.google.gwt.i18n.client.DateTimeFormat.getFormat(PredefinedFormat.DATE_TIME_MEDIUM);
     }
 
     /**
