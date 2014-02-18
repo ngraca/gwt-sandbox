@@ -15,15 +15,15 @@
  */
 package com.google.gwt.dev.javac.asm;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Opcodes;
-import com.google.gwt.dev.javac.asm.CollectClassData.AnnotationEnum;
-import com.google.gwt.dev.util.StringInterner;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.javac.asm.CollectClassData.AnnotationEnum;
+import com.google.gwt.dev.util.StringInterner;
 
 /**
  * Collects data from (possibly nested) annotations on a single entity.

@@ -449,7 +449,7 @@ public class AutoBeanTest extends GWTTestCase {
   public void testTags() {
     AutoBean<Intf> auto = factory.intf();
     auto.setTag("test", 42);
-    assertEquals(42, auto.getTag("test"));
+    assertEquals(42, ((Integer)auto.getTag("test")).intValue());
   }
 
   public void testTraversal() {

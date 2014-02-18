@@ -36,6 +36,7 @@ import org.eclipse.jdt.internal.compiler.env.IBinaryField;
 import org.eclipse.jdt.internal.compiler.env.IBinaryMethod;
 import org.eclipse.jdt.internal.compiler.env.IBinaryNestedType;
 import org.eclipse.jdt.internal.compiler.env.IBinaryType;
+import org.eclipse.jdt.internal.compiler.env.IBinaryTypeAnnotation;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.eclipse.jdt.internal.compiler.lookup.BinaryTypeBinding;
 import org.eclipse.jdt.internal.compiler.lookup.ClassScope;
@@ -137,6 +138,12 @@ public class BinaryTypeReferenceRestrictionsCheckerTest extends TestCase {
     }
 
     public char[] sourceFileName() {
+      return null;
+    }
+
+    @Override
+    public IBinaryTypeAnnotation[] getTypeAnnotations() {
+      // TODO Auto-generated method stub
       return null;
     }
   }

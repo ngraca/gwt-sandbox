@@ -205,7 +205,7 @@ public class PropertyProviderRegistratorGenerator extends Generator {
 
     try {
       return propertyProviderGenerator.generate(logger,
-          Sets.newTreeSet(Arrays.asList(bindingProperty.getDefinedValues())),
+          Sets.<String>newTreeSet(Arrays.asList(bindingProperty.getDefinedValues())),
           bindingProperty.getFallback(), configurationProperties);
 
     } catch (UnableToCompleteException e) {

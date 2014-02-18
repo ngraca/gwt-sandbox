@@ -15,18 +15,6 @@
  */
 package com.google.gwt.dev.shell.rewrite;
 
-import com.google.gwt.core.ext.typeinfo.TypeOracle;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
-import org.objectweb.asm.commons.Method;
-import com.google.gwt.dev.shell.JsValueGlue;
-import com.google.gwt.dev.util.log.speedtracer.DevModeEventType;
-import com.google.gwt.dev.util.log.speedtracer.SpeedTracerLogger;
-import com.google.gwt.dev.util.log.speedtracer.SpeedTracerLogger.Event;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +23,18 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+
+import com.google.gwt.core.ext.typeinfo.TypeOracle;
+import com.google.gwt.dev.asm.ClassReader;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.ClassWriter;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.commons.Method;
+import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
+import com.google.gwt.dev.shell.JsValueGlue;
+import com.google.gwt.dev.util.log.speedtracer.DevModeEventType;
+import com.google.gwt.dev.util.log.speedtracer.SpeedTracerLogger;
+import com.google.gwt.dev.util.log.speedtracer.SpeedTracerLogger.Event;
 
 /**
  * This class performs any and all byte code rewriting needed to make hosted
