@@ -15,18 +15,19 @@
  */
 package com.google.gwt.dev.javac.asm;
 
+import java.util.List;
+
 import com.google.gwt.dev.asm.AnnotationVisitor;
 import com.google.gwt.dev.asm.ClassReader;
 import com.google.gwt.dev.asm.Opcodes;
 import com.google.gwt.dev.asm.Type;
 import com.google.gwt.dev.javac.asm.CollectAnnotationData.AnnotationData;
 import com.google.gwt.dev.javac.asm.CollectClassData.ClassType;
+
 import com.google.gwt.dev.javac.asm.CollectClassDataTest.Pseudo$Inner.Deepest;
 import com.google.gwt.dev.javac.asmbridge.EmptyVisitor;
 import com.google.gwt.dev.javac.typemodel.test.PrimitiveValuesAnnotation;
 import com.google.gwt.dev.javac.typemodel.test.TestAnnotation;
-
-import java.util.List;
 
 /**
  * Tests for {@link CollectClassData}.

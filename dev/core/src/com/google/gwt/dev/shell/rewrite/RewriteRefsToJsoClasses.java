@@ -15,13 +15,13 @@
  */
 package com.google.gwt.dev.shell.rewrite;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.Remapper;
-import com.google.gwt.dev.shell.rewrite.HostedModeClassRewriter.InstanceMethodOracle;
-
 import java.util.Set;
+
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.commons.Remapper;
+import com.google.gwt.dev.shell.rewrite.HostedModeClassRewriter.InstanceMethodOracle;
 
 /**
  * Rewrites references to modified JSO subtypes.

@@ -16,13 +16,13 @@
 
 package com.google.gwt.dev.shell.rewrite;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.Type;
 
 /**
  * A general Class Visitor which will take any of the method calls in it's

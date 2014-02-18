@@ -15,12 +15,16 @@
  */
 package com.google.gwt.dev.javac.asm;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.typeinfo.JPrimitiveType;
 import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.core.ext.typeinfo.JWildcardType.BoundType;
 import com.google.gwt.core.ext.typeinfo.NotFoundException;
-import org.objectweb.asm.signature.SignatureVisitor;
+import com.google.gwt.dev.asm.signature.SignatureVisitor;
 import com.google.gwt.dev.javac.Resolver;
 import com.google.gwt.dev.javac.TypeParameterLookup;
 import com.google.gwt.dev.javac.typemodel.JClassType;

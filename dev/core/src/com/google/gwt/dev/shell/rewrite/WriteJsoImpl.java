@@ -15,19 +15,19 @@
  */
 package com.google.gwt.dev.shell.rewrite;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
-import com.google.gwt.dev.shell.rewrite.HostedModeClassRewriter.InstanceMethodOracle;
-import com.google.gwt.dev.shell.rewrite.HostedModeClassRewriter.SingleJsoImplData;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.FieldVisitor;
+import com.google.gwt.dev.asm.MethodVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.asm.Type;
+import com.google.gwt.dev.asm.commons.Method;
+import com.google.gwt.dev.shell.rewrite.HostedModeClassRewriter.InstanceMethodOracle;
+import com.google.gwt.dev.shell.rewrite.HostedModeClassRewriter.SingleJsoImplData;
 
 /**
  * Writes the implementation classes for JSO and its subtypes.

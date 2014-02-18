@@ -15,18 +15,17 @@
  */
 package com.google.gwt.dev.javac;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import com.google.gwt.dev.util.Util;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.Attribute;
+import com.google.gwt.dev.asm.ClassReader;
+import com.google.gwt.dev.asm.ClassVisitor;
+import com.google.gwt.dev.asm.FieldVisitor;
+import com.google.gwt.dev.asm.Opcodes;
+import com.google.gwt.dev.util.Util;
 
 /**
  * Creates string hashes for various purposes from walking bytecode.
@@ -136,8 +135,7 @@ public class BytecodeSignatureMaker {
       // ignored
     }
 
-    @Override
-    public MethodVisitor visitMethod(int access, String name, String desc, String signature,
+    public com.google.gwt.dev.asm.MethodVisitor visitMethod(int access, String name, String desc, String signature,
         String[] exceptions) {
       // We don't care about synthetic methods
       if ((access & (Opcodes.ACC_SYNTHETIC)) == 0) {

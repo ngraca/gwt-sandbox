@@ -77,6 +77,7 @@ import com.google.gwt.dev.jjs.impl.JsFunctionClusterer;
 import com.google.gwt.dev.jjs.impl.MakeCallsStatic;
 import com.google.gwt.dev.jjs.impl.MethodCallTightener;
 import com.google.gwt.dev.jjs.impl.MethodInliner;
+import com.google.gwt.dev.jjs.impl.MixinDefenderMethods;
 import com.google.gwt.dev.jjs.impl.OptimizerStats;
 import com.google.gwt.dev.jjs.impl.Pruner;
 import com.google.gwt.dev.jjs.impl.RecordRebinds;

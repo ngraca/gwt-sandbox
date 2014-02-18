@@ -15,12 +15,12 @@
  */
 package com.google.gwt.dev.javac.asm;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Opcodes;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.gwt.dev.asm.AnnotationVisitor;
+import com.google.gwt.dev.asm.FieldVisitor;
+import com.google.gwt.dev.asm.Opcodes;
 
 /**
  * Collect data from a single field.
