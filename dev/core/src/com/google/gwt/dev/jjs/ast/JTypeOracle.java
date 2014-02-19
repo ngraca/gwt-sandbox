@@ -1,12 +1,12 @@
 /*
  * Copyright 2008 Google Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -18,6 +18,7 @@ package com.google.gwt.dev.jjs.ast;
 import com.google.gwt.dev.jjs.ast.js.JMultiExpression;
 import com.google.gwt.dev.jjs.impl.HasNameSort;
 import com.google.gwt.dev.util.collect.HashMap;
+import com.google.gwt.dev.util.collect.HashSet;
 import com.google.gwt.dev.util.collect.IdentityHashMap;
 import com.google.gwt.dev.util.collect.IdentityHashSet;
 import com.google.gwt.dev.util.collect.IdentitySets;
@@ -28,8 +29,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -42,14 +45,29 @@ public class JTypeOracle implements Serializable {
         return isImplementedMap.get(type);
     }
 
-    /**
+  private LinkedHashSet<JMethod> exportedMethods = new LinkedHashSet<JMethod>();
+  private Set<JReferenceType> instantiatedJsoTypesViaCast = new HashSet<JReferenceType>();
+
+  public LinkedHashSet<JMethod> getExportedMethods() {
+    return exportedMethods;
+  }
+
+  public void setInstantiatedJsoTypesViaCast(Set<JReferenceType> instantiatedJsoTypesViaCast) {
+    this.instantiatedJsoTypesViaCast = instantiatedJsoTypesViaCast;
+  }
+
+  public Set<JReferenceType> getInstantiatedJsoTypesViaCast() {
+    return instantiatedJsoTypesViaCast;
+  }
+
+  /**
    * Checks a clinit method to find out a few things.
-   * 
+   *
    * <ol>
    * <li>What other clinits it calls.</li>
    * <li>If it runs any code other than clinit calls.</li>
    * </ol>
-   * 
+   *
    * This is used to remove "dead clinit cycles" where self-referential cycles
    * of empty clinits can keep each other alive.
    */
@@ -61,7 +79,7 @@ public class JTypeOracle implements Serializable {
      * Tracks whether any live code is run in this clinit. This is only reliable
      * because we explicitly visit all AST structures that might contain
      * non-clinit-calling code.
-     * 
+     *
      * @see #mightBeDeadCode(JExpression)
      * @see #mightBeDeadCode(JStatement)
      */
@@ -255,6 +273,11 @@ public class JTypeOracle implements Serializable {
       new IdentityHashMap<JInterfaceType, JClassType>();
 
   /**
+   * A set of all JsInterfaces.
+   */
+  private final Set<JInterfaceType> jsInterfaces = new IdentityHashSet<JInterfaceType>();
+
+  /**
    * The associated {@link JProgram}.
    */
   private final JProgram program;
@@ -302,21 +325,61 @@ public class JTypeOracle implements Serializable {
   private final Map<JClassType, Map<String, JMethod>> polyClassMethodMap =
       new IdentityHashMap<JClassType, Map<String, JMethod>>();
 
-  public JTypeOracle(JProgram program) {
+  private final boolean hasWholeWorldKnowledge;
+
+  /**
+   * Constructs a new JTypeOracle.
+   */
+  public JTypeOracle(JProgram program, boolean hasWholeWorldKnowledge) {
     this.program = program;
+    this.hasWholeWorldKnowledge = hasWholeWorldKnowledge;
   }
 
   /**
    * True if the type is a JSO or interface implemented by JSO..
-   * 
-   * @param type
-   * @return
    */
   public boolean canBeJavaScriptObject(JType type) {
     if (type instanceof JNonNullType) {
       type = ((JNonNullType) type).getUnderlyingType();
     }
     return program.isJavaScriptObject(type) || program.typeOracle.isSingleJsoImpl(type);
+  }
+
+  /**
+   * True if the type is a JSO or interface implemented by JSO or a JsInterface without
+   * prototype.
+   */
+  public boolean canCrossCastLikeJso(JType type) {
+    return canBeJavaScriptObject(type) ||
+        (isOrExtendsJsInterface(type, false) && !isOrExtendsJsInterface(type, true));
+  }
+
+  /**
+   * True if the type is a JSO or JSO Interface that is not dually implemented, or is a JsInterface
+   * without the prototype that is not implemented by a Java class.
+   */
+  public boolean willCrossCastLikeJso(JType type) {
+    return isEffectivelyJavaScriptObject(type) || canCrossCastLikeJso(type) &&
+        !hasLiveImplementors(type);
+  }
+
+  private boolean hasLiveImplementors(JType type) {
+    if (type instanceof JInterfaceType && isImplementedMap.get(type) != null) {
+      for (JClassType impl : isImplementedMap.get(type)) {
+        if (isInstantiatedType(impl)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+
+  /**
+   * True if the type is a JSO or interface implemented by a JSO, or a JsInterface.
+   */
+  public boolean canBeInstantiatedInJavascript(JType type) {
+    return canBeJavaScriptObject(type) || isOrExtendsJsInterface(type, false);
   }
 
   public boolean canTheoreticallyCast(JReferenceType type, JReferenceType qType) {
@@ -338,7 +401,7 @@ public class JTypeOracle implements Serializable {
      * Cross-cast allowed in theory, prevents TypeTightener from turning
      * cross-casts into null-casts.
      */
-    if (canBeJavaScriptObject(type) && canBeJavaScriptObject(qType)) {
+    if (canCrossCastLikeJso(type) && canCrossCastLikeJso(qType)) {
       return true;
     }
 
@@ -436,6 +499,11 @@ public class JTypeOracle implements Serializable {
         return true;
       }
     } else if (type instanceof JClassType) {
+      // Avoid infinite recursion
+//      if (qType != program.getJavaScriptObject() &&
+//          willCrossCastLikeJso(type) && willCrossCastLikeJso(qType)) {
+//        return true;
+//      }
 
       JClassType cType = (JClassType) type;
       if (qType instanceof JClassType) {
@@ -484,6 +552,7 @@ public class JTypeOracle implements Serializable {
     isImplementedMap.clear();
     couldBeImplementedMap.clear();
     jsoSingleImpls.clear();
+    jsInterfaces.clear();
     dualImpls.clear();
 
     for (JDeclaredType type : program.getDeclaredTypes()) {
@@ -491,6 +560,15 @@ public class JTypeOracle implements Serializable {
         recordSuperSubInfo((JClassType) type);
       } else {
         recordSuperSubInfo((JInterfaceType) type);
+        if (((JInterfaceType) type).isJsInterface()) {
+          jsInterfaces.add((JInterfaceType) type);
+        }
+      }
+      // first time through, record all exported methods
+      for (JMethod method : type.getMethods()) {
+        if (method.getExportName() != null) {
+          exportedMethods.add(method);
+        }
       }
     }
 
@@ -535,7 +613,12 @@ public class JTypeOracle implements Serializable {
     for (JInterfaceType jsoIntf : jsoSingleImpls.keySet()) {
       Set<JClassType> implementors = get(isImplementedMap, jsoIntf);
       for (JClassType implementor : implementors) {
-        if (!program.isJavaScriptObject(implementor)) {
+        if (!hasWholeWorldKnowledge || !program.isJavaScriptObject(implementor)) {
+          // Assume always dualImpl for separate compilation. Due to the nature of separate
+          // compilation, the compiler can not know if a specific interface is implemented in a
+          // different module unless it is a monolithic whole world compile.
+          // TODO(rluble): Jso devirtualization should be an normalization pass before optimization
+          // JTypeOracle should be mostly unaware of JSOs.
           dualImpls.add(jsoIntf);
           break;
         }
@@ -548,7 +631,7 @@ public class JTypeOracle implements Serializable {
    * or implement in any instantiable class, including strange cases where there
    * is no direct relationship between the methods except in a subclass that
    * inherits one and implements the other. Example:
-   * 
+   *
    * <pre>
    * interface IFoo {
    *   foo();
@@ -559,7 +642,7 @@ public class JTypeOracle implements Serializable {
    * class Foo extends Unrelated implements IFoo {
    * }
    * </pre>
-   * 
+   *
    * In this case, <code>Unrelated.foo()</code> virtually implements
    * <code>IFoo.foo()</code> in subclass <code>Foo</code>.
    */
@@ -574,6 +657,30 @@ public class JTypeOracle implements Serializable {
     return instantiatedTypes;
   }
 
+  /**
+   * Get the nearest JS interface
+   */
+  public JInterfaceType getNearestJsInterface(JType type,
+      boolean mustHavePrototype) {
+    if (type instanceof JInterfaceType) {
+      JInterfaceType intf = (JInterfaceType) type;
+      if (isJsInterface(type)) {
+        if (!mustHavePrototype || !"".equals(intf.getJsPrototype())) {
+          return intf;
+        }
+      }
+      for (JInterfaceType superIntf : intf.getImplements()) {
+        JInterfaceType jsIntf = getNearestJsInterface(superIntf,
+            mustHavePrototype);
+        if (jsIntf != null) {
+          return jsIntf;
+        }
+      }
+    }
+    return null;
+  }
+
+
   public JMethod getPolyMethod(JClassType type, String signature) {
     return getOrCreatePolyMap(type).get(signature);
   }
@@ -584,6 +691,15 @@ public class JTypeOracle implements Serializable {
 
   public boolean isDualJsoInterface(JReferenceType maybeDualImpl) {
     return dualImpls.contains(maybeDualImpl.getUnderlyingType());
+  }
+
+  /**
+   * Whether this type oracle has whole world knowledge or not. Monolithic compiles have whole
+   * world knowledge but separate compiles know only about their immediate source and the
+   * immediately referenced types.
+   */
+  public boolean hasWholeWorldKnowledge() {
+    return hasWholeWorldKnowledge;
   }
 
   /**
@@ -638,12 +754,40 @@ public class JTypeOracle implements Serializable {
     return false;
   }
 
+  public boolean isJsInterfaceMethod(JMethod x) {
+    if (isJsInterface(x.getEnclosingType())) {
+      return true;
+    }
+    for (JMethod om : getAllOverrides(x)) {
+      if (isJsInterface(om.getEnclosingType())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public boolean isSameOrSuper(JClassType type, JClassType qType) {
     return (type == qType || isSuperClass(type, qType));
   }
 
   public boolean isSingleJsoImpl(JType type) {
     return type instanceof JReferenceType && getSingleJsoImpl((JReferenceType) type) != null;
+  }
+
+  /**
+   * Whether the type is a JS interface (does not check supertypes).
+   */
+  public boolean isJsInterface(JType type) {
+    return (type instanceof JInterfaceType && ((JInterfaceType) type).isJsInterface());
+  }
+
+  /**
+   * Whether the type or any supertypes is a JS interface, optionally, only return true if
+   * one of the types has a js prototype.
+   */
+  public boolean isOrExtendsJsInterface(JType type, boolean mustHavePrototype) {
+    JInterfaceType intf = getNearestJsInterface(type, mustHavePrototype);
+    return intf != null;
   }
 
   /**
@@ -667,26 +811,37 @@ public class JTypeOracle implements Serializable {
   public void recomputeAfterOptimizations() {
     Set<JDeclaredType> computed = new IdentityHashSet<JDeclaredType>();
 
-    for (JDeclaredType type : program.getDeclaredTypes()) {
-      computeClinitTarget(type, computed);
-    }
-    nextDual : for (Iterator<JInterfaceType> it = dualImpls.iterator(); it.hasNext();) {
-      JInterfaceType dualIntf = it.next();
-      Set<JClassType> implementors = get(isImplementedMap, dualIntf);
-      for (JClassType implementor : implementors) {
-        if (isInstantiatedType(implementor) && !program.isJavaScriptObject(implementor)) {
-          // This dual is still implemented by a Java class.
-          continue nextDual;
-        }
+    if (hasWholeWorldKnowledge) {
+      // Optimizations that only make sense in whole world compiles:
+      //   (1) minimize clinit()s.
+      for (JDeclaredType type : program.getDeclaredTypes()) {
+        computeClinitTarget(type, computed);
       }
-      // No Java implementors.
-      it.remove();
-    }
 
-    // Prune jsoSingleImpls when implementor isn't live
-    Iterator<JClassType> jit = jsoSingleImpls.values().iterator();
-    while (jit.hasNext()) {
-      if (!isInstantiatedType(jit.next())) {
+      //   (2) make JSOs singleImpl when all the Java implementors are gone.
+      nextDual:
+      for (Iterator<JInterfaceType> it = dualImpls.iterator(); it.hasNext(); ) {
+        JInterfaceType dualIntf = it.next();
+        Set<JClassType> implementors = get(isImplementedMap, dualIntf);
+        for (JClassType implementor : implementors) {
+          if (isInstantiatedType(implementor) && !program.isJavaScriptObject(implementor)) {
+            // This dual is still implemented by a Java class.
+            continue nextDual;
+          }
+        }
+        // No Java implementors.
+        it.remove();
+      }
+
+      //   (3) prune JSOs from jsoSingleImpls and dualImpls when JSO isn't live hence the
+      //       interface is no longer considered to be implemented by a JSO.
+      Iterator<Entry<JInterfaceType, JClassType>> jit = jsoSingleImpls.entrySet().iterator();
+      while (jit.hasNext()) {
+        Entry<JInterfaceType, JClassType> jsoSingleImplEntry = jit.next();
+        if (isInstantiatedType(jsoSingleImplEntry.getValue())) {
+          continue;
+        }
+        dualImpls.remove(jsoSingleImplEntry.getKey());
         jit.remove();
       }
     }

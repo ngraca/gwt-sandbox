@@ -23,20 +23,13 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.google.gwt.user.client.Window.alert;
+import com.google.gwt.core.client.js.JsInterface;
+import com.google.gwt.user.client.Window;
 
 /**
  * HelloWorld application.
  */
 public class Hello implements EntryPoint {
-
-
-    public void onModuleLoad() {
-      List<Double> strings = make(10, Math::random);
-      Predicate<Double> gthalf = x -> x > 0.5;
-
-      double specialSum = filterSum(strings, gthalf.and(x -> x < 0.8));
-      alert("" + specialSum);
-    }
 
     public <T> List<T> make(int numCopies, Supplier<T> supplier) {
         List<T> toReturn = new ArrayList<>();
@@ -55,4 +48,88 @@ public class Hello implements EntryPoint {
         }
         return s;
     }
+
+  @JsInterface(prototype = "HTMLElement")
+  public interface HTMLElement {
+    void setAttribute(String atr, String value);
+  }
+
+  @JsInterface
+  public interface GoogleMap extends HTMLElement {
+    void registerCallback(SomeCallback someCallback);
+  }
+
+
+
+  @JsInterface
+  interface MyAnchor{}
+
+  @JsInterface
+  interface BaseInter {
+    int m();
+  }
+  @JsInterface(prototype = "HTMLButtonElement")
+  interface Button {
+    void click();
+    void addEventListener(String event, SomeCallback a);
+  }
+
+  @JsInterface
+  interface SomeCallback {
+    void callbackA();
+  }
+  static class Base implements BaseInter {
+    public int m() {
+      return 42;
+    }
+  }
+
+  static class Child extends Base implements SomeCallback {
+
+    @Override
+    public void callbackA() {
+      Window.alert("foo");
+    }
+  }
+
+  public void onModuleLoad() {
+
+    List<Double> strings = make(10, Math::random);
+    Predicate<Double> gthalf = x -> x > 0.5;
+
+    double specialSum = filterSum(strings, gthalf.and(x -> x < 0.8));
+    alert("Lambda: " + specialSum);
+
+    Button b = (Button) foo();
+    b.click();
+//    b.toString();
+    register(new Child());
+
+    MyAnchor map = abc(); // Fails here w/ CCE
+    Window.alert("JsInterface: " + map);
+
+    GoogleMap map2 = abc();
+    map2.setAttribute("style","height:400px; display:block");
+
+    b.addEventListener("click", new SomeCallback() {
+      @Override
+      public void callbackA() {
+        Window.alert("hello");
+      }
+    });
+  }
+
+  public static native Object foo() /*-{
+    var but = $doc.createElement("button");
+    $doc.body.appendChild(but);
+    return but;
+  }-*/;
+
+  public static native void register(Base e) /*-{
+    $wnd.__r = e;
+  }-*/;
+
+  private static native <T> T abc() /*-{
+      return $doc.createElement("a");
+  }-*/;
 }

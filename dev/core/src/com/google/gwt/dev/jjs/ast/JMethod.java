@@ -39,7 +39,7 @@ public class JMethod extends JNode implements HasEnclosingType, HasName, HasType
     public JMethod toExternal() {
        return getExternalizedMethod(enclosingType.getName(), signature, false);
     }
-
+    
     private static class ExternalSerializedForm implements Serializable {
 
     private final JDeclaredType enclosingType;
@@ -94,6 +94,25 @@ public class JMethod extends JNode implements HasEnclosingType, HasName, HasType
 
   protected transient String signature;
 
+  private String exportName;
+  private boolean jsProperty;
+
+  public void setExportName(String exportName) {
+    this.exportName = exportName;
+  }
+
+  public String getExportName() {
+    return exportName;
+  }
+
+  public void setJsProperty(boolean jsProperty) {
+    this.jsProperty = jsProperty;
+  }
+
+  public boolean isJsProperty() {
+    return jsProperty;
+  }
+  
   /**
    * The access modifier; stored as an int to reduce memory / serialization
    * footprint.

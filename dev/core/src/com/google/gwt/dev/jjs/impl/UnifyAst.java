@@ -750,6 +750,9 @@ public class UnifyAst implements UnifyAstView {
       if (t instanceof JClassType && isJso((JClassType) t)) {
         instantiate(t);
       }
+      if (t instanceof JInterfaceType && ((JInterfaceType) t).isJsInterface()) {
+	      instantiate(t);
+      }
     }
   }
 
@@ -928,7 +931,8 @@ public class UnifyAst implements UnifyAstView {
         instantiate(intf);
       }
       staticInitialize(type);
-
+      boolean isJsInterface = type instanceof JInterfaceType ?
+          isJsInterface((JInterfaceType) type) : false;
       // Flow into any reachable virtual methods.
       for (JMethod method : type.getMethods()) {
         if (method.canBePolymorphic()) {
@@ -944,6 +948,10 @@ public class UnifyAst implements UnifyAstView {
               pending = Lists.add(pending, method);
             }
             virtualMethodsPending.put(signature, pending);
+            if (isJsInterface) {
+              // Fake a call into the method to keep it around
+              flowInto(method);
+            }
           }
         }
       }
@@ -954,7 +962,31 @@ public class UnifyAst implements UnifyAstView {
     if (type == null) {
       return false;
     }
-    return type == program.getJavaScriptObject() || isJso(type.getSuperClass());
+    boolean isJso = type == program.getJavaScriptObject() || isJso(type.getSuperClass());
+    if (isJso) {
+      return true;
+    }
+
+    // if any of the superinterfaces as JsInterfaces, we consider this effectively a JSO
+    // for instantiability purposes
+    for (JInterfaceType intf : type.getImplements()) {
+      if (isJsInterface(intf)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean isJsInterface(JInterfaceType intf) {
+    if (intf.isJsInterface()) {
+      return true;
+    }
+    for (JInterfaceType subIntf : intf.getImplements()) {
+      if (isJsInterface(subIntf)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

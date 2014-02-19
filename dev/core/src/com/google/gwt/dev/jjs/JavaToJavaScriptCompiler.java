@@ -33,6 +33,8 @@ import com.google.gwt.core.ext.linker.SyntheticArtifact;
 import com.google.gwt.core.ext.linker.impl.StandardSymbolData;
 import com.google.gwt.core.ext.soyc.Range;
 import com.google.gwt.core.ext.soyc.SourceMapRecorder;
+import com.google.gwt.core.ext.soyc.coderef.DependencyGraphRecorder;
+import com.google.gwt.core.ext.soyc.coderef.EntityRecorder;
 import com.google.gwt.core.ext.soyc.impl.DependencyRecorder;
 import com.google.gwt.core.ext.soyc.impl.SizeMapRecorder;
 import com.google.gwt.core.ext.soyc.impl.SplitPointRecorder;
@@ -42,8 +44,10 @@ import com.google.gwt.dev.CompilerContext;
 import com.google.gwt.dev.Permutation;
 import com.google.gwt.dev.PrecompileTaskOptions;
 import com.google.gwt.dev.cfg.ConfigurationProperty;
+import com.google.gwt.dev.cfg.EntryMethodHolderGenerator;
 import com.google.gwt.dev.cfg.ModuleDef;
 import com.google.gwt.dev.javac.CompilationProblemReporter;
+import com.google.gwt.dev.javac.StandardGeneratorContext;
 import com.google.gwt.dev.javac.typemodel.TypeOracle;
 import com.google.gwt.dev.jdt.RebindPermutationOracle;
 import com.google.gwt.dev.jjs.UnifiedAst.AST;
@@ -81,7 +85,6 @@ import com.google.gwt.dev.jjs.impl.ImplementClassLiteralsAsFields;
 import com.google.gwt.dev.jjs.impl.JavaToJavaScriptMap;
 import com.google.gwt.dev.jjs.impl.JsAbstractTextTransformer;
 import com.google.gwt.dev.jjs.impl.JsFunctionClusterer;
-import com.google.gwt.dev.jjs.impl.JsIEBlockTextTransformer;
 import com.google.gwt.dev.jjs.impl.JsoDevirtualizer;
 import com.google.gwt.dev.jjs.impl.LongCastNormalizer;
 import com.google.gwt.dev.jjs.impl.LongEmulationNormalizer;
@@ -115,7 +118,6 @@ import com.google.gwt.dev.js.JsBreakUpLargeVarStatements;
 import com.google.gwt.dev.js.JsCoerceIntShift;
 import com.google.gwt.dev.js.JsDuplicateCaseFolder;
 import com.google.gwt.dev.js.JsDuplicateFunctionRemover;
-import com.google.gwt.dev.js.JsIEBlockSizeVisitor;
 import com.google.gwt.dev.js.JsInliner;
 import com.google.gwt.dev.js.JsNormalizer;
 import com.google.gwt.dev.js.JsObfuscateNamer;
@@ -144,6 +146,7 @@ import com.google.gwt.dev.js.ast.JsVisitor;
 import com.google.gwt.dev.util.DefaultTextOutput;
 import com.google.gwt.dev.util.Empty;
 import com.google.gwt.dev.util.Memory;
+import com.google.gwt.dev.util.Name.SourceName;
 import com.google.gwt.dev.util.Pair;
 import com.google.gwt.dev.util.Util;
 import com.google.gwt.dev.util.arg.OptionOptimize;
@@ -402,6 +405,10 @@ public class JavaToJavaScriptCompiler {
       // (10) Split up the program into fragments
       SyntheticArtifact dependencies = null;
 
+      boolean isSourceMapsEnabled = findBooleanProperty(propertyOracles, logger,
+          "compiler.useSourceMaps", "true", true, false, false);
+
+      MultipleDependencyGraphRecorder dependencyRecorder = null;
       if (options.isRunAsyncEnabled()) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -421,30 +428,28 @@ public class JavaToJavaScriptCompiler {
         int minFragmentSize = findIntegerConfigurationProperty(propertyOracles, logger,
             CodeSplitters.MIN_FRAGMENT_SIZE, 0);
 
+        dependencyRecorder = chooseDependencyRecorder(options, jprogram, baos);
         CodeSplitter.exec(logger, jprogram, jsProgram, jjsmap, expectedFragmentCount,
-            minFragmentSize, chooseDependencyRecorder(options.isSoycEnabled(), baos));
+            minFragmentSize, dependencyRecorder);
 
-        if (baos.size() == 0 && options.isSoycEnabled()) {
-          recordNonSplitDependencies(jprogram, baos);
+        if (baos.size() == 0) {
+          dependencyRecorder = recordNonSplitDependencies(jprogram, baos, options);
         }
         if (baos.size() > 0) {
           dependencies =
               new SyntheticArtifact(SoycReportLinker.class, "dependencies" + permutationId
                   + ".xml.gz", baos.toByteArray());
         }
+      } else if (options.isSoycEnabled() || options.isJsonSoycEnabled()) {
+        dependencyRecorder = recordNonSplitDependencies(jprogram, new ByteArrayOutputStream(),
+            options);
       }
 
-      // detect if browser is ie6 or not known
-      boolean isIE6orUnknown = findBooleanProperty(propertyOracles, logger, "user.agent", "ie6",
-          true, false, true);
-
-      boolean isSourceMapsEnabled = findBooleanProperty(propertyOracles, logger,
-          "compiler.useSourceMaps", "true", true, false, false);
       // (10.5) Obfuscate
       Map<JsName, String> obfuscateMap = Maps.create();
       switch (options.getOutput()) {
         case OBFUSCATED:
-          obfuscateMap = JsStringInterner.exec(jprogram, jsProgram, isIE6orUnknown);
+          obfuscateMap = JsStringInterner.exec(jprogram, jsProgram);
           FreshNameGenerator freshNameGenerator = JsObfuscateNamer.exec(jsProgram, propertyOracles);
           if (options.shouldRemoveDuplicateFunctions() &&
               JsStackEmulator.getStackMode(propertyOracles) == JsStackEmulator.StackMode.STRIP) {
@@ -456,7 +461,7 @@ public class JavaToJavaScriptCompiler {
           JsPrettyNamer.exec(jsProgram, propertyOracles);
           break;
         case DETAILED:
-          obfuscateMap = JsStringInterner.exec(jprogram, jsProgram, isIE6orUnknown);
+          obfuscateMap = JsStringInterner.exec(jprogram, jsProgram);
           JsVerboseNamer.exec(jsProgram, propertyOracles);
           break;
         default:
@@ -474,26 +479,16 @@ public class JavaToJavaScriptCompiler {
 
       // (11) Perform any post-obfuscation normalizations.
 
-      // Work around an IE7 bug,
-      // http://code.google.com/p/google-web-toolkit/issues/detail?id=1440
-      // note, JsIEBlockTextTransformer now handles restructuring top level
-      // blocks, this class now handles non-top level blocks only.
-      boolean splitBlocks = isIE6orUnknown;
-
-      if (splitBlocks) {
-        JsIEBlockSizeVisitor.exec(jsProgram);
-      }
       JsBreakUpLargeVarStatements.exec(jsProgram, propertyOracles);
 
       // (12) Generate the final output text.
       String[] js = new String[jsProgram.getFragmentCount()];
       StatementRanges[] ranges = new StatementRanges[js.length];
-      SizeBreakdown[] sizeBreakdowns =
-          options.isSoycEnabled() || options.isCompilerMetricsEnabled()
-              ? new SizeBreakdown[js.length] : null;
+      SizeBreakdown[] sizeBreakdowns = options.isJsonSoycEnabled() || options.isSoycEnabled() ||
+          options.isCompilerMetricsEnabled() ? new SizeBreakdown[js.length] : null;
       List<Map<Range, SourceInfo>> sourceInfoMaps = new ArrayList<Map<Range, SourceInfo>>();
       generateJavaScriptCode(compilerContext, jprogram, jsProgram, jjsmap, js, ranges,
-          sizeBreakdowns, sourceInfoMaps, splitBlocks, isSourceMapsEnabled);
+          sizeBreakdowns, sourceInfoMaps, isSourceMapsEnabled || options.isJsonSoycEnabled());
 
       PermutationResult toReturn =
           new PermutationResultImpl(js, permutation, makeSymbolMap(symbolTable, jsProgram), ranges);
@@ -530,15 +525,24 @@ public class JavaToJavaScriptCompiler {
             options.isSoycHtmlDisabled()));
       }
 
-      // TODO: enable this when ClosureCompiler is enabled
-      if (isSourceMapsEnabled) {
+      if (options.isJsonSoycEnabled()) {
+        // TODO: enable this when ClosureCompiler is enabled
+        if (options.isClosureCompilerEnabled()) {
+          logger.log(TreeLogger.WARN, "Incompatible options: -XenableClosureCompiler and "
+              + "-XjsonSoyc; ignoring -XjsonSoyc.");
+        } else {
+          toReturn.addArtifacts(EntityRecorder.makeSoycArtifacts(permutationId, sourceInfoMaps,
+              jjsmap, sizeBreakdowns, ((DependencyGraphRecorder) dependencyRecorder), jprogram));
+        }
+      } else if (isSourceMapsEnabled) {
+        // TODO: enable this when ClosureCompiler is enabled
         if (options.isClosureCompilerEnabled()) {
           logger.log(TreeLogger.WARN, "Incompatible options: -XenableClosureCompiler and "
               + "compiler.useSourceMaps=true; ignoring compiler.useSourceMaps=true.");
         } else {
           logger.log(TreeLogger.INFO, "Source Maps Enabled");
-          toReturn.addArtifacts(SourceMapRecorder.makeSourceMapArtifacts(sourceInfoMaps,
-              permutationId));
+          toReturn.addArtifacts(SourceMapRecorder.makeSourceMapArtifacts(permutationId,
+              sourceInfoMaps));
         }
       }
 
@@ -638,6 +642,8 @@ public class JavaToJavaScriptCompiler {
       throw new IllegalArgumentException("entry point(s) required");
     }
 
+    JProgram jprogram = new JProgram();
+    JsProgram jsProgram = new JsProgram();
     Set<String> allRootTypes = new TreeSet<String>();
 
     // Find all the possible rebinds for declared entry point types.
@@ -648,7 +654,7 @@ public class JavaToJavaScriptCompiler {
     rpo.getGeneratorContext().finish(logger);
     Collections.addAll(allRootTypes, additionalRootTypes);
     allRootTypes.addAll(JProgram.CODEGEN_TYPES_SET);
-    allRootTypes.addAll(JProgram.INDEX_TYPES_SET);
+    allRootTypes.addAll(jprogram.getTypeNamesToIndex());
     /*
      * Add all SingleJsoImpl types that we know about. It's likely that the
      * concrete types are never explicitly referenced.
@@ -661,15 +667,16 @@ public class JavaToJavaScriptCompiler {
 
     Memory.maybeDumpMemory("CompStateBuilt");
 
-    JProgram jprogram = new JProgram();
-    JsProgram jsProgram = new JsProgram();
+    String entryMethodHolderTypeName = buildEntryMethodHolder(
+        logger, compilerContext, rpo.getGeneratorContext(), allRootTypes, jprogram);
 
     try {
       // (2) Assemble the Java AST.
       UnifyAst unifyAst = new UnifyAst(logger, compilerContext, jprogram, jsProgram, rpo);
       unifyAst.addRootTypes(allRootTypes);
       // TODO: move this into UnifyAst?
-      findEntryPoints(logger, compilerContext, rpo, declEntryPts, jprogram);
+      findEntryPoints(
+          logger, compilerContext, rpo, declEntryPts, jprogram, entryMethodHolderTypeName);
       unifyAst.exec();
 
       List<String> finalTypeOracleTypes = Lists.create();
@@ -684,7 +691,7 @@ public class JavaToJavaScriptCompiler {
       // Free up memory.
       rpo.clear();
 
-      if (options.isSoycEnabled()) {
+      if (options.isSoycEnabled() || options.isJsonSoycEnabled()) {
         SourceInfoCorrelator.exec(jprogram);
       }
 
@@ -958,11 +965,38 @@ public class JavaToJavaScriptCompiler {
     return numNodes;
   }
 
-  private static MultipleDependencyGraphRecorder chooseDependencyRecorder(boolean soycEnabled,
-      OutputStream out) {
+  /**
+   * Creates (and returns the name for) a new class to serve as the container for the invocation
+   * of registered entry point methods as part of module bootstrapping.<br />
+   *
+   * The resulting class will be invoked during bootstrapping like FooEntryMethodHolder.init(). By
+   * generating the class on the fly and naming it to match the current module, the resulting holder
+   * class can work in both monolithic and separate compilation schemes.
+   */
+  private static String buildEntryMethodHolder(TreeLogger logger, CompilerContext compilerContext,
+      StandardGeneratorContext context, Set<String> allRootTypes, JProgram jprogram)
+      throws UnableToCompleteException {
+    EntryMethodHolderGenerator entryMethodHolderGenerator = new EntryMethodHolderGenerator();
+    String entryMethodHolderTypeName = entryMethodHolderGenerator.generate(
+        logger, context, compilerContext.getModule().getCanonicalName());
+    context.finish(logger);
+    // Ensures that unification traverses and keeps the class.
+    allRootTypes.add(entryMethodHolderTypeName);
+    // Ensures that JProgram knows to index this class's methods so that later bootstrap
+    // construction code is able to locate the FooEntryMethodHolder.init() function.
+    jprogram.addIndexedTypeName(entryMethodHolderTypeName);
+    return entryMethodHolderTypeName;
+  }
+
+  private static MultipleDependencyGraphRecorder chooseDependencyRecorder(JJSOptions options,
+      JProgram jprogram, OutputStream out) {
     MultipleDependencyGraphRecorder dependencyRecorder = MultipleDependencyGraphRecorder.NULL_RECORDER;
-    if (soycEnabled) {
+    if (options.isSoycEnabled() && options.isJsonSoycEnabled()) {
+      dependencyRecorder = new DependencyGraphRecorder(out, jprogram);
+    } else if (options.isSoycEnabled()) {
       dependencyRecorder = new DependencyRecorder(out);
+    } else if (options.isJsonSoycEnabled()) {
+      dependencyRecorder = new DependencyGraphRecorder(out, jprogram);
     }
     return dependencyRecorder;
   }
@@ -1013,10 +1047,12 @@ public class JavaToJavaScriptCompiler {
   }
 
   private static void findEntryPoints(TreeLogger logger, CompilerContext compilerContext,
-      RebindPermutationOracle rpo, String[] mainClassNames, JProgram program)
+      RebindPermutationOracle rpo, String[] mainClassNames, JProgram program,
+      String entryMethodHolderTypeName)
       throws UnableToCompleteException {
     Event findEntryPointsEvent = SpeedTracerLogger.start(CompilerEventType.FIND_ENTRY_POINTS);
-    JMethod bootStrapMethod = program.getIndexedMethod("EntryMethodHolder.init");
+    JMethod bootStrapMethod =
+        program.getIndexedMethod(SourceName.getShortClassName(entryMethodHolderTypeName) + ".init");
 
     JMethodBody body = (JMethodBody) bootStrapMethod.getBody();
     JBlock block = body.getBlock();
@@ -1106,13 +1142,12 @@ public class JavaToJavaScriptCompiler {
    * @param ranges An array to hold the statement ranges for that JavaScript
    * @param sizeBreakdowns An array to hold the size breakdowns for that JavaScript
    * @param sourceInfoMaps An array to hold the source info maps for that JavaScript
-   * @param splitBlocks true if current permutation is for IE6 or unknown
    * @param sourceMapsEnabled
    */
   private static void generateJavaScriptCode(CompilerContext compilerContext, JProgram jprogram,
       JsProgram jsProgram, JavaToJavaScriptMap jjsMap, String[] js, StatementRanges[] ranges,
       SizeBreakdown[] sizeBreakdowns, List<Map<Range, SourceInfo>> sourceInfoMaps,
-      boolean splitBlocks, boolean sourceMapsEnabled) {
+      boolean sourceMapsEnabled) {
     PrecompileTaskOptions options = compilerContext.getOptions();
     boolean useClosureCompiler = options.isClosureCompilerEnabled();
     if (useClosureCompiler) {
@@ -1161,12 +1196,6 @@ public class JavaToJavaScriptCompiler {
         transformer.exec();
       }
       functionClusterEvent.end();
-
-      // rewrite top-level blocks to limit the number of statements
-      if (!sourceMapsEnabled && splitBlocks) {
-        transformer = new JsIEBlockTextTransformer(transformer);
-        transformer.exec();
-      }
 
       js[i] = transformer.getJs();
       ranges[i] = transformer.getStatementRanges();
@@ -1428,8 +1457,18 @@ public class JavaToJavaScriptCompiler {
    * then this method can be used instead to record a single dependency graph
    * for the whole program.
    */
-  private static void recordNonSplitDependencies(JProgram program, OutputStream out) {
-    DependencyRecorder deps = new DependencyRecorder(out);
+  private static DependencyRecorder recordNonSplitDependencies(
+      JProgram program, OutputStream out, JJSOptions options) {
+    DependencyRecorder deps;
+    if (options.isSoycEnabled() && options.isJsonSoycEnabled()) {
+      deps = new DependencyGraphRecorder(out, program);
+    } else if (options.isSoycEnabled()) {
+      deps = new DependencyRecorder(out);
+    } else if (options.isJsonSoycEnabled()) {
+      deps = new DependencyGraphRecorder(out, program);
+    } else {
+      return null;
+    }
     deps.open();
     deps.startDependencyGraph("initial", null);
 
@@ -1438,5 +1477,6 @@ public class JavaToJavaScriptCompiler {
     cfa.traverseEntryMethods();
     deps.endDependencyGraph();
     deps.close();
+    return deps;
   }
 }
