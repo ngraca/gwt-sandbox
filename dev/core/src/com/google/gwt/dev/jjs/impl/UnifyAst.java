@@ -15,6 +15,7 @@
  */
 package com.google.gwt.dev.jjs.impl;
 
+import com.google.gwt.core.ext.BadPropertyValueException;
 import com.google.gwt.core.ext.ConfigurationProperty;
 import com.google.gwt.core.ext.PropertyOracle;
 import com.google.gwt.core.ext.TreeLogger;
@@ -751,7 +752,7 @@ public class UnifyAst implements UnifyAstView {
         instantiate(t);
       }
       if (t instanceof JInterfaceType && ((JInterfaceType) t).isJsInterface()) {
-	      instantiate(t);
+          instantiate(t);
       }
     }
   }
@@ -1206,6 +1207,7 @@ public class UnifyAst implements UnifyAstView {
               "You do not need to specifiy the magic method parameter or return types as they all have the same signature.");
         }
       }
+    }catch(BadPropertyValueException ignored){ // User did not include magic method gwt.xml
     }catch(Exception e){
       logger.log(Type.WARN, "Error encountered looking up user-defined magic methods", e);
     }
