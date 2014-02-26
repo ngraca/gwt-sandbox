@@ -43,4 +43,8 @@ import java.lang.annotation.Target;
 public @interface JsInterface {
   String prototype() default "";
   boolean isNative() default false;
+<<<<<<< HEAD
+=======
+  Class<?>[] constructor() default {};
+>>>>>>> Working version of JsInterop Phase 1.
 }
