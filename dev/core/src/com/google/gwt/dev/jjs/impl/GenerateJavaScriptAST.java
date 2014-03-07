@@ -3076,6 +3076,10 @@ public class GenerateJavaScriptAST {
 
   public static String mangleNameForPrivatePoly(JMethod x) {
     assert x.isPrivate() && !x.isStatic();
+    return unsafeMangleNameForPrivatePoly(x);
+  }
+
+  public static String unsafeMangleNameForPrivatePoly(JMethod x) {
     StringBuffer sb = new StringBuffer();
     /*
      * Private instance methods in different classes should not override each
