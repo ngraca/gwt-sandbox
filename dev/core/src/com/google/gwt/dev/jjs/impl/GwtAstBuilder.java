@@ -1188,7 +1188,7 @@ public class GwtAstBuilder {
           // Lookup the JMethod version
           JMethod interfaceMethod = typeMap.get(samBinding);
           // And its JInterface container we must implement
-          JInterfaceType funcType = (JInterfaceType) interfaceMethod.getEnclosingType();
+          JInterfaceType funcType = (JInterfaceType) typeMap.get(binding);
           SourceInfo info = makeSourceInfo(x);
 
           // Create an inner class to implement the interface and SAM method.
@@ -1324,10 +1324,14 @@ public class GwtAstBuilder {
           popMethodInfo();
           // Add the newly generated type
           newTypes.add(innerLambdaClass);
+
       }
 
       private JClassType createInnerClass(String name, FunctionalExpression x, JInterfaceType funcType, SourceInfo info) {
-          JClassType innerLambdaClass = new JClassType(info, name + "$Type", false, true);
+        JClassType innerLambdaClass = new JClassType(info,
+            // Temporary workaround: types in the default "" package fail in draft mode.
+            // Putting all lambdas into "lambda." instead.
+            "lambda."+name + "$Type", false, true);
 
           innerLambdaClass.setEnclosingType((JDeclaredType) typeMap.get(x.binding.declaringClass));
           innerLambdaClass.addImplements(funcType);
@@ -1341,7 +1345,8 @@ public class GwtAstBuilder {
 
           // Add a getClass() implementation for all non-Object classes.
           createSyntheticMethod(info, "getClass", innerLambdaClass, javaLangClass, false, false, false,
-                  AccessModifier.PUBLIC);
+                  AccessModifier.PUBLIC, new JReturnStatement(info, new JClassLiteral(info, innerLambdaClass)));
+
           return innerLambdaClass;
       }
 
@@ -1592,14 +1597,14 @@ public class GwtAstBuilder {
 
           // Get the interface method is binds to
           JMethod interfaceMethod = typeMap.get(samBinding);
-          JInterfaceType funcType = (JInterfaceType) interfaceMethod.getEnclosingType();
+          JInterfaceType funcType = (JInterfaceType) typeMap.get(binding);
           SourceInfo info = makeSourceInfo(x);
 
           // Get the method that the Type::method is actually referring to
           JMethod referredMethod = typeMap.get(x.binding);
 
           // Constructors and overloading mean we need generate unique names
-          String lambdaName = GenerateJavaScriptAST.mangleNameForPrivatePoly(referredMethod);
+          String lambdaName = GenerateJavaScriptAST.unsafeMangleNameForPrivatePoly(referredMethod);
 
           // Create an inner class to hold the implementation of the interface
           JClassType innerLambdaClass = createInnerClass(lambdaName, x, funcType, info);
@@ -1763,7 +1768,7 @@ public class GwtAstBuilder {
     @Override
     public void endVisit(SuperReference x, BlockScope scope) {
       try {
-        assert (typeMap.get(x.resolvedType) == curClass.classType.getSuperClass());
+        assert (typeMap.get(x.resolvedType) == curClass.getClassOrInterface().getSuperClass());
         // Super refs can be modeled as a this ref.
         push(makeThisRef(makeSourceInfo(x)));
       } catch (Throwable e) {
@@ -1806,7 +1811,7 @@ public class GwtAstBuilder {
     @Override
     public void endVisit(ThisReference x, BlockScope scope) {
       try {
-        assert (typeMap.get(x.resolvedType) == curClass.classType);
+        assert typeMap.get(x.resolvedType) == curClass.getClassOrInterface();
         push(makeThisRef(makeSourceInfo(x)));
       } catch (Throwable e) {
         throw translateException(x, e);
@@ -2759,7 +2764,7 @@ public class GwtAstBuilder {
     }
 
     private JThisRef makeThisRef(SourceInfo info) {
-      return new JThisRef(info, curClass.classType);
+      return new JThisRef(info, curClass.getClassOrInterface());
     }
 
     private JExpression makeThisReference(SourceInfo info, ReferenceBinding targetType,
@@ -3313,6 +3318,10 @@ public class GwtAstBuilder {
       this.typeDecl = x;
       this.scope = x.scope;
     }
+
+    public JDeclaredType getClassOrInterface() {
+      return classType == null ? type : classType;
+    }
   }
 
   static class CudInfo {
@@ -3807,12 +3816,16 @@ public class GwtAstBuilder {
   }
 
   private JMethod createSyntheticMethod(SourceInfo info, String name, JDeclaredType enclosingType,
-      JType returnType, boolean isAbstract, boolean isStatic, boolean isFinal, AccessModifier access) {
+      JType returnType, boolean isAbstract, boolean isStatic, boolean isFinal, AccessModifier access, JStatement ... statements) {
     JMethod method =
         new JMethod(info, name, enclosingType, returnType, isAbstract, isStatic, isFinal, access);
     method.freezeParamTypes();
     method.setSynthetic();
-    method.setBody(new JMethodBody(info));
+    JMethodBody body = new JMethodBody(info);
+    for (JStatement statement : statements) {
+      body.getBlock().addStmt(statement);
+    }
+    method.setBody(body);
     enclosingType.addMethod(method);
     return method;
   }

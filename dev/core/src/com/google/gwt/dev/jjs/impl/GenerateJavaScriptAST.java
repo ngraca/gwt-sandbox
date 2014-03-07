@@ -1387,13 +1387,13 @@ public class GenerateJavaScriptAST {
           // replace the method with its retargeted clinit
           method = clinitTarget.getClinitMethod();
         }
-      } else {
-
+      }
       JsNameRef qualifier = null;
       JsExpression unnecessaryQualifier = null;
       JsExpression result = null;
       boolean isJsProperty = false;
       result = jsInvocation;
+//      } else {
 //        if (program.typeOracle.isOrExtendsJsInterface(method.getEnclosingType(), false) &&
 //            method.getParams().size() == x.getArgs().size()) {
 //          // rewrite Single-Abstract-Method args as JsFunctions
@@ -1414,6 +1414,7 @@ public class GenerateJavaScriptAST {
 //            }
 //          }
 //        }
+//      }
       if (method.isStatic()) {
         if (x.getInstance() != null) {
           unnecessaryQualifier = (JsExpression) pop(); // instance
@@ -3492,7 +3493,7 @@ public class GenerateJavaScriptAST {
     return sb.toString();
   }
 
-  String mangleNameForPoly(JMethod x) {
+  static String mangleNameForPoly(JMethod x) {
     assert !x.isPrivate() && !x.isStatic();
     StringBuilder sb = new StringBuilder();
     sb.append(getNameString(x));
@@ -3502,6 +3503,10 @@ public class GenerateJavaScriptAST {
 
   public static String mangleNameForPrivatePoly(JMethod x) {
     assert x.isPrivate() && !x.isStatic();
+    return unsafeMangleNameForPrivatePoly(x);
+  }
+
+  public static String unsafeMangleNameForPrivatePoly(JMethod x) {
     StringBuilder sb = new StringBuilder();
     /*
      * Private instance methods in different classes should not override each
@@ -3516,7 +3521,7 @@ public class GenerateJavaScriptAST {
     return sb.toString();
   }
 
-  private void constructManglingSignature(JMethod x, StringBuilder partialSignature) {
+  private static void constructManglingSignature(JMethod x, StringBuilder partialSignature) {
     partialSignature.append("__");
     for (int i = 0; i < x.getOriginalParamTypes().size(); ++i) {
       JType type = x.getOriginalParamTypes().get(i);

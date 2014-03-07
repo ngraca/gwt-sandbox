@@ -1365,9 +1365,17 @@ public class UnifyAst {
     return type;
   }
 
-  private JDeclaredType internalFindType(String typeName,
-      NameBasedTypeLocator nameBasedTypeLocator, boolean reportErrors) {
+  public JDeclaredType searchForTypeByBinary(String binaryTypeName)
+      throws UnableToCompleteException  {
+    return findType(binaryTypeName, binaryNameBasedTypeLocator);
+  }
 
+  public JDeclaredType searchForTypeBySource(String sourceTypeName)
+      throws UnableToCompleteException  {
+    return findType(sourceTypeName, sourceNameBasedTypeLocator);
+  }
+
+  private JDeclaredType internalFindType(String typeName, NameBasedTypeLocator nameBasedTypeLocator, boolean reportErrors) {
     if (nameBasedTypeLocator.resolvedTypeIsAvailable(typeName)) {
       // The type was already resolved.
       return nameBasedTypeLocator.getResolvedType(typeName);
