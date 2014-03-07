@@ -23,45 +23,6 @@ import com.google.gwt.dev.jjs.SourceInfo;
 import com.google.gwt.dev.jjs.SourceOrigin;
 import com.google.gwt.dev.jjs.ast.*;
 import com.google.gwt.dev.jjs.ast.JField.Disposition;
-import com.google.gwt.dev.jjs.ast.JFieldRef;
-import com.google.gwt.dev.jjs.ast.JFloatLiteral;
-import com.google.gwt.dev.jjs.ast.JForStatement;
-import com.google.gwt.dev.jjs.ast.JIfStatement;
-import com.google.gwt.dev.jjs.ast.JInstanceOf;
-import com.google.gwt.dev.jjs.ast.JIntLiteral;
-import com.google.gwt.dev.jjs.ast.JInterfaceType;
-import com.google.gwt.dev.jjs.ast.JLabel;
-import com.google.gwt.dev.jjs.ast.JLabeledStatement;
-import com.google.gwt.dev.jjs.ast.JLiteral;
-import com.google.gwt.dev.jjs.ast.JLocal;
-import com.google.gwt.dev.jjs.ast.JLocalRef;
-import com.google.gwt.dev.jjs.ast.JLongLiteral;
-import com.google.gwt.dev.jjs.ast.JMethod;
-import com.google.gwt.dev.jjs.ast.JMethodBody;
-import com.google.gwt.dev.jjs.ast.JMethodCall;
-import com.google.gwt.dev.jjs.ast.JNewArray;
-import com.google.gwt.dev.jjs.ast.JNewInstance;
-import com.google.gwt.dev.jjs.ast.JNode;
-import com.google.gwt.dev.jjs.ast.JNullLiteral;
-import com.google.gwt.dev.jjs.ast.JNullType;
-import com.google.gwt.dev.jjs.ast.JParameter;
-import com.google.gwt.dev.jjs.ast.JParameterRef;
-import com.google.gwt.dev.jjs.ast.JPostfixOperation;
-import com.google.gwt.dev.jjs.ast.JPrefixOperation;
-import com.google.gwt.dev.jjs.ast.JPrimitiveType;
-import com.google.gwt.dev.jjs.ast.JProgram;
-import com.google.gwt.dev.jjs.ast.JReferenceType;
-import com.google.gwt.dev.jjs.ast.JReturnStatement;
-import com.google.gwt.dev.jjs.ast.JStatement;
-import com.google.gwt.dev.jjs.ast.JStringLiteral;
-import com.google.gwt.dev.jjs.ast.JSwitchStatement;
-import com.google.gwt.dev.jjs.ast.JThisRef;
-import com.google.gwt.dev.jjs.ast.JThrowStatement;
-import com.google.gwt.dev.jjs.ast.JTryStatement;
-import com.google.gwt.dev.jjs.ast.JType;
-import com.google.gwt.dev.jjs.ast.JUnaryOperator;
-import com.google.gwt.dev.jjs.ast.JVariable;
-import com.google.gwt.dev.jjs.ast.JWhileStatement;
 import com.google.gwt.dev.jjs.ast.js.JMultiExpression;
 import com.google.gwt.dev.jjs.ast.js.JsniClassLiteral;
 import com.google.gwt.dev.jjs.ast.js.JsniFieldRef;
@@ -85,8 +46,6 @@ import com.google.gwt.thirdparty.guava.common.collect.Maps;
 import com.google.gwt.thirdparty.guava.common.collect.Sets;
 
 import org.eclipse.jdt.core.compiler.CharOperation;
-import org.eclipse.jdt.internal.compiler.ast.*;
-import org.eclipse.jdt.internal.compiler.lookup.*;
 import org.eclipse.jdt.internal.compiler.ast.AND_AND_Expression;
 import org.eclipse.jdt.internal.compiler.ast.ASTNode;
 import org.eclipse.jdt.internal.compiler.ast.AbstractMethodDeclaration;
@@ -125,11 +84,13 @@ import org.eclipse.jdt.internal.compiler.ast.FieldReference;
 import org.eclipse.jdt.internal.compiler.ast.FloatLiteral;
 import org.eclipse.jdt.internal.compiler.ast.ForStatement;
 import org.eclipse.jdt.internal.compiler.ast.ForeachStatement;
+import org.eclipse.jdt.internal.compiler.ast.FunctionalExpression;
 import org.eclipse.jdt.internal.compiler.ast.IfStatement;
 import org.eclipse.jdt.internal.compiler.ast.Initializer;
 import org.eclipse.jdt.internal.compiler.ast.InstanceOfExpression;
 import org.eclipse.jdt.internal.compiler.ast.IntLiteral;
 import org.eclipse.jdt.internal.compiler.ast.LabeledStatement;
+import org.eclipse.jdt.internal.compiler.ast.LambdaExpression;
 import org.eclipse.jdt.internal.compiler.ast.LocalDeclaration;
 import org.eclipse.jdt.internal.compiler.ast.LongLiteral;
 import org.eclipse.jdt.internal.compiler.ast.MarkerAnnotation;
@@ -146,6 +107,7 @@ import org.eclipse.jdt.internal.compiler.ast.QualifiedAllocationExpression;
 import org.eclipse.jdt.internal.compiler.ast.QualifiedNameReference;
 import org.eclipse.jdt.internal.compiler.ast.QualifiedSuperReference;
 import org.eclipse.jdt.internal.compiler.ast.QualifiedThisReference;
+import org.eclipse.jdt.internal.compiler.ast.ReferenceExpression;
 import org.eclipse.jdt.internal.compiler.ast.ReturnStatement;
 import org.eclipse.jdt.internal.compiler.ast.SingleMemberAnnotation;
 import org.eclipse.jdt.internal.compiler.ast.SingleNameReference;
@@ -189,6 +151,7 @@ import org.eclipse.jdt.internal.compiler.util.Util;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -1166,7 +1129,7 @@ public class GwtAstBuilder {
           // Lookup the JMethod version
           JMethod interfaceMethod = typeMap.get(samBinding);
           // And its JInterface container we must implement
-          JInterfaceType funcType = (JInterfaceType) interfaceMethod.getEnclosingType();
+          JInterfaceType funcType = (JInterfaceType) typeMap.get(binding);
           SourceInfo info = makeSourceInfo(x);
 
           // Create an inner class to implement the interface and SAM method.
@@ -1302,6 +1265,7 @@ public class GwtAstBuilder {
           popMethodInfo();
           // Add the newly generated type
           newTypes.add(innerLambdaClass);
+          
       }
 
       private JClassType createInnerClass(String name, FunctionalExpression x, JInterfaceType funcType, SourceInfo info) {
@@ -1319,7 +1283,8 @@ public class GwtAstBuilder {
 
           // Add a getClass() implementation for all non-Object classes.
           createSyntheticMethod(info, "getClass", innerLambdaClass, javaLangClass, false, false, false,
-                  AccessModifier.PUBLIC);
+                  AccessModifier.PUBLIC, new JReturnStatement(info, new JClassLiteral(info, innerLambdaClass)));
+          
           return innerLambdaClass;
       }
 
@@ -1571,14 +1536,14 @@ public class GwtAstBuilder {
 
           // Get the interface method is binds to
           JMethod interfaceMethod = typeMap.get(samBinding);
-          JInterfaceType funcType = (JInterfaceType) interfaceMethod.getEnclosingType();
+          JInterfaceType funcType = (JInterfaceType) typeMap.get(binding);
           SourceInfo info = makeSourceInfo(x);
 
           // Get the method that the Type::method is actually referring to
           JMethod referredMethod = typeMap.get(x.binding);
 
           // Constructors and overloading mean we need generate unique names
-          String lambdaName = GenerateJavaScriptAST.mangleNameForPrivatePoly(referredMethod);
+          String lambdaName = GenerateJavaScriptAST.unsafeMangleNameForPrivatePoly(referredMethod);
 
           // Create an inner class to hold the implementation of the interface
           JClassType innerLambdaClass = createInnerClass(lambdaName, x, funcType, info);
@@ -1742,7 +1707,7 @@ public class GwtAstBuilder {
     @Override
     public void endVisit(SuperReference x, BlockScope scope) {
       try {
-        assert (typeMap.get(x.resolvedType) == curClass.classType.getSuperClass());
+        assert (typeMap.get(x.resolvedType) == curClass.getClassOrInterface().getSuperClass());
         // Super refs can be modeled as a this ref.
         push(makeThisRef(makeSourceInfo(x)));
       } catch (Throwable e) {
@@ -1785,7 +1750,7 @@ public class GwtAstBuilder {
     @Override
     public void endVisit(ThisReference x, BlockScope scope) {
       try {
-        assert (typeMap.get(x.resolvedType) == curClass.classType);
+        assert typeMap.get(x.resolvedType) == curClass.getClassOrInterface();
         push(makeThisRef(makeSourceInfo(x)));
       } catch (Throwable e) {
         throw translateException(x, e);
@@ -2735,7 +2700,7 @@ public class GwtAstBuilder {
     }
 
     private JThisRef makeThisRef(SourceInfo info) {
-      return new JThisRef(info, curClass.classType);
+      return new JThisRef(info, curClass.getClassOrInterface());
     }
 
     private JExpression makeThisReference(SourceInfo info, ReferenceBinding targetType,
@@ -3271,6 +3236,10 @@ public class GwtAstBuilder {
       this.typeDecl = x;
       this.scope = x.scope;
     }
+    
+    public JDeclaredType getClassOrInterface() {
+      return classType == null ? type : classType;
+    }
   }
 
   static class CudInfo {
@@ -3763,12 +3732,16 @@ public class GwtAstBuilder {
   }
 
   private JMethod createSyntheticMethod(SourceInfo info, String name, JDeclaredType enclosingType,
-      JType returnType, boolean isAbstract, boolean isStatic, boolean isFinal, AccessModifier access) {
+      JType returnType, boolean isAbstract, boolean isStatic, boolean isFinal, AccessModifier access, JStatement ... statements) {
     JMethod method =
         new JMethod(info, name, enclosingType, returnType, isAbstract, isStatic, isFinal, access);
     method.freezeParamTypes();
     method.setSynthetic();
-    method.setBody(new JMethodBody(info));
+    JMethodBody body = new JMethodBody(info);
+    for (JStatement statement : statements) {
+      body.getBlock().addStmt(statement);
+    }
+    method.setBody(body);
     enclosingType.addMethod(method);
     return method;
   }
