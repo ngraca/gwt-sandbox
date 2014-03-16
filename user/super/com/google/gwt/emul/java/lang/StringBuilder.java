@@ -121,6 +121,11 @@ public class StringBuilder implements CharSequence, Appendable {
     return this;
   }
 
+  public StringBuilder append(StringBuilder x) {
+    impl.append(data, x);
+    return this;
+  }
+
   public StringBuilder appendCodePoint(int x) {
     impl.appendNonNull(data, String.valueOf(Character.toChars(x)));
     return this;
