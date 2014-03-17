@@ -187,7 +187,8 @@ class JsonTokenizer {
            return array;
          default:
            back(c);
-           array.set(array.length(), nextValue());
+           JsonValue value = nextValue();
+           array.set(array.length(), value);
            final int d = nextNonWhitespace();
            switch (d) {
              case ']':
@@ -226,7 +227,8 @@ class JsonTokenizer {
                 "Invalid object: expecting \":\"");
           }
           // TODO(knorton): Make sure this key is not already set.
-          object.put(key, nextValue());
+          JsonValue value = nextValue();
+          object.put(key, value);
           switch (nextNonWhitespace()) {
             case ',':
               break;
@@ -258,7 +260,8 @@ class JsonTokenizer {
                 "Invalid object: expecting \":\"");
           }
           // TODO(knorton): Make sure this key is not already set.
-          object.put(keyBuffer.toString(), nextValue());
+          value = nextValue();
+          object.put(keyBuffer.toString(), value);
           switch (nextNonWhitespace()) {
             case ',':
               break;
