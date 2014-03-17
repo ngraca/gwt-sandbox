@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="core/src"/>
 	<classpathentry kind="src" output="war" path="core/war"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-8-oracle"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/gwt-user"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

@@ -50,10 +50,6 @@ public class Hello implements EntryPoint {
     return but;
   }-*/;
 
-  public static native void register(Base e) /*-{
-    $wnd.__r = e;
-  }-*/;
-
   private static native <T> T abc() /*-{
       return $doc.createElement("a");
   }-*/;

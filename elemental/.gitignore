@@ -1,0 +1,4 @@
+idl/scripts/*.pyc
+idl/templates/*.darttemplate
+idl/database
+idl/generated
