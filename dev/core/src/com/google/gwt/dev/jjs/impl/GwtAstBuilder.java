@@ -1269,7 +1269,7 @@ public class GwtAstBuilder {
       }
 
       private JClassType createInnerClass(String name, FunctionalExpression x, JInterfaceType funcType, SourceInfo info) {
-          JClassType innerLambdaClass = new JClassType(info, name + "$Type", false, true);
+          JClassType innerLambdaClass = new JClassType(info, "lambda."+name + "$Type", false, true);
 
           innerLambdaClass.setEnclosingType((JDeclaredType) typeMap.get(x.binding.declaringClass));
           innerLambdaClass.addImplements(funcType);

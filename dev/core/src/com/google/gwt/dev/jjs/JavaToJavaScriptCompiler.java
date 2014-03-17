@@ -13,6 +13,25 @@
  */
 package com.google.gwt.dev.jjs;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.zip.GZIPInputStream;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import com.google.gwt.core.ext.PropertyOracle;
 import com.google.gwt.core.ext.PropertyOracles;
 import com.google.gwt.core.ext.TreeLogger;
@@ -66,15 +85,15 @@ import com.google.gwt.dev.jjs.impl.ArrayNormalizer;
 import com.google.gwt.dev.jjs.impl.AssertionNormalizer;
 import com.google.gwt.dev.jjs.impl.AssertionRemover;
 import com.google.gwt.dev.jjs.impl.AstDumper;
-import com.google.gwt.dev.jjs.impl.ComputeCastabilityInformation;
-import com.google.gwt.dev.jjs.impl.ImplementCastsAndTypeChecks;
 import com.google.gwt.dev.jjs.impl.CatchBlockNormalizer;
+import com.google.gwt.dev.jjs.impl.ComputeCastabilityInformation;
 import com.google.gwt.dev.jjs.impl.DeadCodeElimination;
 import com.google.gwt.dev.jjs.impl.EnumOrdinalizer;
 import com.google.gwt.dev.jjs.impl.EqualityNormalizer;
 import com.google.gwt.dev.jjs.impl.Finalizer;
 import com.google.gwt.dev.jjs.impl.FixAssignmentsToUnboxOrCast;
 import com.google.gwt.dev.jjs.impl.GenerateJavaScriptAST;
+import com.google.gwt.dev.jjs.impl.ImplementCastsAndTypeChecks;
 import com.google.gwt.dev.jjs.impl.ImplementClassLiteralsAsFields;
 import com.google.gwt.dev.jjs.impl.JavaToJavaScriptMap;
 import com.google.gwt.dev.jjs.impl.JsAbstractTextTransformer;
@@ -150,25 +169,6 @@ import com.google.gwt.soyc.SoycDashboard;
 import com.google.gwt.soyc.io.ArtifactsOutputDirectory;
 import com.google.gwt.thirdparty.guava.common.collect.Lists;
 import com.google.gwt.thirdparty.guava.common.collect.Multimap;
-
-import org.xml.sax.SAXException;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.zip.GZIPInputStream;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * A base for classes that compile Java <code>JProgram</code> representations into corresponding Js
@@ -246,8 +246,6 @@ public abstract class JavaToJavaScriptCompiler {
         if (logger.isLoggable(TreeLogger.INFO)) {
           logger.log(TreeLogger.INFO, "Compiling permutation " + permutationId + "...");
         }
-//        ImplementClassLiteralsAsFields.exec(jprogram);
-        MixinDefenderMethods.exec(jprogram);
 
         printPermutationTrace(permutation);
 
@@ -973,6 +971,8 @@ public abstract class JavaToJavaScriptCompiler {
       }
       // Free up memory.
       rpo.clear();
+      jprogram.typeOracle.computeBeforeAST();
+      MixinDefenderMethods.exec(jprogram);
       jprogram.typeOracle.computeBeforeAST();
       return compilationState;
     }
