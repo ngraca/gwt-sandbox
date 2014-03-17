@@ -208,7 +208,7 @@ java.lang.reflect.AnnotatedElement
 
   public static boolean isClassMetadataEnabled() {
     // This body may be replaced by the compiler
-    return false;
+    return true;
   }
 
   /**
@@ -273,6 +273,7 @@ java.lang.reflect.AnnotatedElement
       String className) {
     clazz.typeName = packageName + className;
     clazz.simpleName = className;
+    clazz.pkgName = packageName;
     clazz.constId = clazz.remember();
 
   }
@@ -292,7 +293,7 @@ java.lang.reflect.AnnotatedElement
         + (isInstantiable(typeId) ? "S" + typeId : "" + clazz.hashCode());
     clazz.simpleName = clazz.typeName;
     clazz.constId = clazz.remember();
-
+    clazz.pkgName = "";
   }
 
   /**
@@ -302,28 +303,7 @@ java.lang.reflect.AnnotatedElement
     clazz.typeName = "Class$" + primitiveTypeId;
     clazz.simpleName = clazz.typeName;
     clazz.constId = clazz.remember();
-
-  }
-
-  static void setName(Class<?> clazz, String packageName, String className,
-      int seedId) {
-    if (Class.isClassMetadataEnabled()||clazz.isPrimitive()) {
-      clazz.pkgName = packageName.length() == 0 ? "" : packageName;
-      clazz.typeName = className;
-    } else {
-      /*
-       * The initial "" + in the below code is to prevent clazz.hashCode() from
-       * being autoboxed. The class literal creation code is run very early
-       * during application start up, before class Integer has been initialized.
-       */
-      clazz.pkgName = "";
-      clazz.typeName = "Class$"
-          + (isInstantiableOrPrimitive(seedId) ? asString(seedId) : "" + clazz.hashCode());
-    }
-    if (isInstantiable(seedId)) {
-      setClassLiteral(seedId, clazz);
-    }
-    clazz.constId = clazz.remember();
+    clazz.pkgName = "";
   }
   
   /**
@@ -359,14 +339,25 @@ java.lang.reflect.AnnotatedElement
   int modifiers;
 
   protected JavaScriptObject enumConstantsFunc;
-  protected String pkgName;
-  protected String typeName;
-  protected Class<?> componentType;
+
   protected Class<? super T> enumSuperclass;
+  
   protected Class<? super T> superclass;
+    
+  protected String simpleName;
+
+  protected String typeName;
+  
+  protected String pkgName;
+  
+  protected Class<?> componentType;
+  
   private AnnotationMap annotations;
+  
   public ClassMap<T> classData;
+  
   public JsMemberPool<T> members;
+  
   private int constId;
 
   public static <T> boolean needsEnhance(Class<T> cls) {
