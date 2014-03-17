@@ -22,7 +22,10 @@ import com.google.gwt.core.client.JsDate;
 import com.google.gwt.core.client.impl.Impl;
 import com.google.gwt.lang.Array;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
+
+import com.google.gwt.core.client.impl.Impl;
 
 /**
  * General-purpose low-level utility methods. GWT only supports a limited subset
@@ -35,13 +38,13 @@ public final class System {
    * Does nothing in web mode. To get output in web mode, subclass PrintStream
    * and call {@link #setErr(PrintStream)}.
    */
-  public static final PrintStream err = new PrintStream(null);
+  public static final PrintStream err = new PrintStream((OutputStream)null);
 
   /**
    * Does nothing in web mode. To get output in web mode, subclass
    * {@link PrintStream} and call {@link #setOut(PrintStream)}.
    */
-  public static final PrintStream out = new PrintStream(null);
+  public static final PrintStream out = new PrintStream((OutputStream)null);
 
   public static void arraycopy(Object src, int srcOfs, Object dest, int destOfs, int len) {
     checkNotNull(src, "src");
@@ -90,7 +93,11 @@ public final class System {
   }
 
   public static long currentTimeMillis() {
-    return (long) JsDate.now();
+    return (long) currentTimeMillis0();
+  }
+
+  public static long nanoTime() {
+    return (long) nanoTime0();
   }
 
   /**
@@ -101,11 +108,36 @@ public final class System {
   public static void gc() {
   }
 
-  /**
-   * Always returns default, used for source compatibility
-   */
+  // TODO make this a magic method that can translate constant strings into a lookup of compile-time
+  // properties; either an extendable configuration property, or a properties file (gwt.properties)
+  public static String getProperty(String key) {
+    return getPropertyGwt(key);
+  }
   public static String getProperty(String key, String def) {
-    return def;
+    String check = getPropertyGwt(key);
+    return check==null?def:check;
+  }
+
+  static{
+    initProps();
+  }
+  private static native void initProps() /*-{
+    if(!$wnd.Gwt_Prop)$wnd.Gwt_Prop = {};
+  }-*/;
+
+  private static native String getPropertyGwt(String key)/*-{
+    return $wnd.Gwt_Prop[key];
+  }-*/;
+
+  public static void setProperty(String key, String value) {
+    setPropertyGwt(key, value);
+  }
+  private static native void setPropertyGwt(String key, String value)/*-{
+    $wnd.Gwt_Prop[key] = value;
+  }-*/;
+
+  public static SecurityManager getSecurityManager() {
+    return null;// never any security manager!
   }
 
   public static int identityHashCode(Object o) {
@@ -134,10 +166,19 @@ public final class System {
     }
   }
 
+  private static native double currentTimeMillis0() /*-{
+    return (new Date()).getTime();
+  }-*/;
+
+  private static native double nanoTime0() /*-{
+    return performance && performance.now() || (new Date()).getTime()*1000000;
+  }-*/;
+
   /**
    * Returns the length of an array via Javascript.
    */
   private static native int getArrayLength(Object array) /*-{
     return array.length;
   }-*/;
+
 }
