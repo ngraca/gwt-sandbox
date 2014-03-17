@@ -15,10 +15,10 @@
  */
 package java.lang;
 
-import com.google.gwt.core.client.JsDate;
-import com.google.gwt.core.client.impl.Impl;
-
+import java.io.OutputStream;
 import java.io.PrintStream;
+
+import com.google.gwt.core.client.impl.Impl;
 
 /**
  * General-purpose low-level utility methods. GWT only supports a limited subset
@@ -31,13 +31,13 @@ public final class System {
    * Does nothing in web mode. To get output in web mode, subclass PrintStream
    * and call {@link #setErr(PrintStream)}.
    */
-  public static final PrintStream err = new PrintStream(null);
+  public static final PrintStream err = new PrintStream((OutputStream)null);
 
   /**
    * Does nothing in web mode. To get output in web mode, subclass
    * {@link PrintStream} and call {@link #setOut(PrintStream)}.
    */
-  public static final PrintStream out = new PrintStream(null);
+  public static final PrintStream out = new PrintStream((OutputStream)null);
 
   public static void arraycopy(Object src, int srcOfs, Object dest,
       int destOfs, int len) {
@@ -85,13 +85,17 @@ public final class System {
           destArray[destOfs++] = srcArray[srcOfs++];
         }
       }
-    } else if (len > 0) {
+    } else {
       nativeArraycopy(src, srcOfs, dest, destOfs, len);
     }
   }
 
   public static long currentTimeMillis() {
-    return (long) JsDate.now();
+    return (long) currentTimeMillis0();
+  }
+
+  public static long nanoTime() {
+    return (long) nanoTime0();
   }
 
   /**
@@ -102,11 +106,36 @@ public final class System {
   public static void gc() {
   }
 
-  /**
-   * Always returns default, used for source compatibility
-   */
+  // TODO make this a magic method that can translate constant strings into a lookup of compile-time
+  // properties; either an extendable configuration property, or a properties file (gwt.properties)
+  public static String getProperty(String key) {
+    return getPropertyGwt(key);
+  }
   public static String getProperty(String key, String def) {
-    return def;
+    String check = getPropertyGwt(key);
+    return check==null?def:check;
+  }
+
+  static{
+    initProps();
+  }
+  private static native void initProps() /*-{
+    if(!$wnd.Gwt_Prop)$wnd.Gwt_Prop = {};
+  }-*/;
+
+  private static native String getPropertyGwt(String key)/*-{
+    return $wnd.Gwt_Prop[key];
+  }-*/;
+
+  public static void setProperty(String key, String value) {
+    setPropertyGwt(key, value);
+  }
+  private static native void setPropertyGwt(String key, String value)/*-{
+    $wnd.Gwt_Prop[key] = value;
+  }-*/;
+
+  public static SecurityManager getSecurityManager() {
+    return null;// never any security manager!
   }
 
   public static int identityHashCode(Object o) {
@@ -130,6 +159,14 @@ public final class System {
     }
   }
 
+  private static native double currentTimeMillis0() /*-{
+    return (new Date()).getTime();
+  }-*/;
+
+  private static native double nanoTime0() /*-{
+    return performance && performance.now() || (new Date()).getTime()*1000000;
+  }-*/;
+
   /**
    * Returns the length of an array via Javascript.
    */
@@ -139,9 +176,8 @@ public final class System {
 
   /**
    * Copy an array using native Javascript. The destination array must be a real
-   * Java array (ie, already has the GWT type info on it) with enough capacity for the additional
-   * elements. No error checking is performed -- the caller is expected to have verified
-   * everything first.
+   * Java array (ie, already has the GWT type info on it). No error checking is
+   * performed -- the caller is expected to have verified everything first.
    *
    * @param src source array for copy
    * @param srcOfs offset into source array
@@ -149,22 +185,9 @@ public final class System {
    * @param destOfs offset into destination array
    * @param len number of elements to copy
    */
-  private static native void nativeArraycopy(
-      Object src, int srcOfs, Object dest, int destOfs, int len) /*-{
-    // Work around function.prototype.apply call stack size limits.
-    // Performance: http://jsperf.com/java-system-arraycopy/2
-    if (src === dest) {
-      // copying to the same array, make a copy first
-      src = src.slice(srcOfs, srcOfs + len);
-      srcOfs = 0;
-    }
-    for (var batchStart = srcOfs, end = srcOfs + len; batchStart < end;) { // increment in block
-      var batchEnd = Math.min(batchStart + 10000, end);
-      len = batchEnd - batchStart;
-      Array.prototype.splice.apply(dest, [destOfs, len].concat(src.slice(batchStart, batchEnd)));
-      batchStart = batchEnd;
-      destOfs += len;
-    }
+  private static native void nativeArraycopy(Object src, int srcOfs, Object dest, int destOfs,
+      int len) /*-{
+    Array.prototype.splice.apply(dest, [destOfs, len].concat(src.slice(srcOfs, srcOfs + len)));
   }-*/;
 
 }
