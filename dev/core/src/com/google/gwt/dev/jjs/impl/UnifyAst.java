@@ -1283,33 +1283,11 @@ public class UnifyAst implements UnifyAstView {
   }
 
   public JDeclaredType searchForTypeByBinary(String binaryTypeName) {
-    JDeclaredType type = program.getFromTypeMap(binaryTypeName);
-    if (type == null) {
-      CompiledClass cc = classFileMap.get(BinaryName.toInternalName(binaryTypeName));
-      if (cc == null) {
-        // TODO: error
-        throw new NoClassDefFoundError(binaryTypeName);
-      }
-      assimilateUnit(cc.getUnit());
-      type = program.getFromTypeMap(binaryTypeName);
-      assert type != null || errorsFound;
-    }
-    return type;
+    return findType(binaryTypeName, binaryNameBasedTypeLocator);
   }
 
   public JDeclaredType searchForTypeBySource(String sourceTypeName) {
-    JDeclaredType type = program.getFromTypeMap(sourceTypeName);
-    if (type == null) {
-      CompiledClass cc = classFileMapBySource.get(sourceTypeName);
-      if (cc == null) {
-        // TODO: error
-        throw new NoClassDefFoundError(sourceTypeName);
-      }
-      assimilateUnit(cc.getUnit());
-      type = program.getFromTypeMap(sourceTypeName);
-      assert type != null || errorsFound;
-    }
-    return type;
+    return findType(sourceTypeName, sourceNameBasedTypeLocator);
   }
 
   private JDeclaredType findType(String typeName, NameBasedTypeLocator nameBasedTypeLocator) {
