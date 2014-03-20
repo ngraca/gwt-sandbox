@@ -26,8 +26,20 @@ import com.google.gwt.core.client.impl.SpecializeMethod;
  * @param <K> key type
  * @param <V> value type
  */
-abstract class AbstractHashMap<K, V> extends AbstractMap<K, V> {
-
+public abstract class AbstractHashMap<K, V> extends AbstractMap<K, V> {
+  /*
+   * Implementation notes:
+   * 
+   * String keys are stored in a separate map from non-String keys. String keys
+   * are mapped to their values via a JS associative map, stringMap. String keys
+   * could collide with intrinsic properties (like watch, constructor) so we
+   * prepend each key with a ':' inside of stringMap.
+   * 
+   * Integer keys are used to index all non-string keys. A key's hashCode is the
+   * index in hashCodeMap which should contain that key. Since several keys may
+   * have the same hash, each value in hashCodeMap is actually an array
+   * containing all entries whose keys share the same hash.
+   */
   private final class EntrySet extends AbstractSet<Entry<K, V>> {
 
     @Override
