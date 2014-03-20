@@ -73,6 +73,7 @@ import com.google.gwt.dev.jjs.ast.JNewInstance;
 import com.google.gwt.dev.jjs.ast.JNode;
 import com.google.gwt.dev.jjs.ast.JNonNullType;
 import com.google.gwt.dev.jjs.ast.JNullLiteral;
+import com.google.gwt.dev.jjs.ast.JNullType;
 import com.google.gwt.dev.jjs.ast.JNumericEntry;
 import com.google.gwt.dev.jjs.ast.JParameter;
 import com.google.gwt.dev.jjs.ast.JParameterRef;
@@ -1371,6 +1372,9 @@ public class GenerateJavaScriptAST {
         if (program.typeOracle.isOrExtendsJsInterface(method.getEnclosingType(), false) &&
             method.getParams().size() == x.getArgs().size()) {
           // rewrite Single-Abstract-Method args as JsFunctions
+          if (method.getType() instanceof JNullType) {
+            method.setType(method.getOriginalReturnType());
+          }
           List<JParameter> params = method.getParams();
           List<JsExpression> arguments = jsInvocation.getArguments();
 

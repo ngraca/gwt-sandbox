@@ -49,6 +49,14 @@ import java.util.Map;
  */
 public class ResolveGenericsTest extends AsmTestCase {
 
+  protected static String classLocation(Class<?> aClass) {
+    try {
+      return aClass.getProtectionDomain().getCodeSource().getLocation().toExternalForm().replace("file://", "");
+    } catch (Exception e) {
+      return null;
+    }
+  }
+  
   public static class FailErrorTreeLogger extends TreeLogger {
     @Override
     public TreeLogger branch(com.google.gwt.core.ext.TreeLogger.Type type,
@@ -114,9 +122,9 @@ public class ResolveGenericsTest extends AsmTestCase {
     @Override
     public JRealClassType newRealClassType(JPackage pkg,
         String enclosingTypeName, boolean isLocalType, String className,
-        boolean isIntf) {
+        String location, boolean isIntf) {
       return delegate.newRealClassType(pkg, enclosingTypeName, isLocalType,
-          className, isIntf);
+          className, location, isIntf);
     }
 
     @Override
@@ -272,13 +280,14 @@ public class ResolveGenericsTest extends AsmTestCase {
     if (enclosingType != null) {
       enclosingTypeName = enclosingType.getName();
     }
+    String location = classLocation(clazz);
     if (n == 0) {
       type = resolver.newRealClassType(pkg, enclosingTypeName, false,
-          clazz.getSimpleName(), clazz.isInterface());
+          clazz.getSimpleName(), location, clazz.isInterface());
     } else {
       JTypeParameter[] params = createTypeParams(typeParams);
       type = new JGenericType(oracle, pkg, enclosingTypeName,
-          clazz.getSimpleName(), clazz.isInterface(), params);
+          clazz.getSimpleName(), location, clazz.isInterface(), params);
     }
     return type;
   }

@@ -1,12 +1,12 @@
 /*
  * Copyright 2008 Google Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -14,9 +14,6 @@
  * the License.
  */
 package com.google.gwt.dev.shell;
-
-import com.google.gwt.dev.util.JsniRef;
-import com.google.gwt.dev.util.StringInterner;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -29,16 +26,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.google.gwt.dev.util.JsniRef;
+import com.google.gwt.dev.util.StringInterner;
+
 /**
  * Helper class for dispatching methods to Java objects. It takes methods on
  * various Java classes and assigns DISPID's to them.
+ *
+ * Included in XApi as it fixes a bug in gwt-2.5.rc1 affecting projects using elemental
  */
 public class DispatchClassInfo {
   private Class<?> cls;
 
   private final int clsId;
 
-  private ArrayList<Member> memberById;
+  private HashMap<Integer, Member> memberByMemberId;
+  private HashMap<Member, Integer> memberIdByMember;
 
   private HashMap<String, Integer> memberIdByName;
 
@@ -54,7 +57,7 @@ public class DispatchClassInfo {
   public Member getMember(int id) {
     lazyInitTargetMembers();
     id &= 0xffff;
-    return memberById.get(id);
+    return memberByMemberId.get(id);
   }
 
   public int getMemberId(String mangledMemberName) {
@@ -82,9 +85,14 @@ public class DispatchClassInfo {
 
   private void addMemberIfUnique(String name, List<Member> membersForName) {
     if (membersForName.size() == 1) {
-      memberById.add(membersForName.get(0));
-      memberIdByName.put(
-          StringInterner.get().intern(name), memberById.size() - 1);
+      Member m = membersForName.get(0);
+      Integer id = memberIdByMember.get(m);
+      if (id == null){
+        id = memberByMemberId.size();
+      }
+     memberIdByName.put(StringInterner.get().intern(name), id);
+     memberIdByMember.put(m, id);
+     memberByMemberId.put(id, m);
     }
   }
 
@@ -185,7 +193,7 @@ public class DispatchClassInfo {
     sb.append(")");
 
     String mangledName = StringInterner.get().intern(sb.toString());
-    
+
     return mangledName;
   }
 
@@ -228,13 +236,13 @@ public class DispatchClassInfo {
   }
 
   private void lazyInitTargetMembers() {
-    if (memberById == null) {
-      memberById = new ArrayList<Member>();
-      memberById.add(null); // 0 is reserved; it's magic on Win32
-      memberIdByName = new HashMap<String, Integer>();
+    if (memberByMemberId == null) {
+      memberByMemberId = new HashMap<Integer, Member>(32767);
+      memberIdByMember = new HashMap<Member, Integer>(32767);
+      memberIdByName = new HashMap<String, Integer>(32767);
 
       LinkedHashMap<String, LinkedHashMap<String, Member>> members = findMostDerivedMembers(
-          cls, true);
+          cls, cls != Class.class);
       for (Entry<String, LinkedHashMap<String, Member>> entry : members.entrySet()) {
         String name = entry.getKey();
 

@@ -77,6 +77,7 @@ import org.eclipse.jdt.internal.compiler.ast.EmptyStatement;
 import org.eclipse.jdt.internal.compiler.ast.EqualExpression;
 import org.eclipse.jdt.internal.compiler.ast.ExplicitConstructorCall;
 import org.eclipse.jdt.internal.compiler.ast.Expression;
+import org.eclipse.jdt.internal.compiler.ast.ExpressionContext;
 import org.eclipse.jdt.internal.compiler.ast.ExtendedStringLiteral;
 import org.eclipse.jdt.internal.compiler.ast.FalseLiteral;
 import org.eclipse.jdt.internal.compiler.ast.FieldDeclaration;
@@ -128,6 +129,7 @@ import org.eclipse.jdt.internal.compiler.ast.UnionTypeReference;
 import org.eclipse.jdt.internal.compiler.ast.WhileStatement;
 import org.eclipse.jdt.internal.compiler.impl.BooleanConstant;
 import org.eclipse.jdt.internal.compiler.impl.Constant;
+import org.eclipse.jdt.internal.compiler.impl.ReferenceContext;
 import org.eclipse.jdt.internal.compiler.impl.StringConstant;
 import org.eclipse.jdt.internal.compiler.lookup.AnnotationBinding;
 import org.eclipse.jdt.internal.compiler.lookup.BaseTypeBinding;
@@ -1260,14 +1262,18 @@ public class GwtAstBuilder {
 
           // Finally, we replace the LambdaExpression with new InnerLambdaClass(this, local1, local2, ...);
           JNewInstance allocLambda = new JNewInstance(info, ctor, innerLambdaClass);
-          allocLambda.addArg(new JThisRef(info, (JClassType) outerField.getEnclosingType()));
+          
+          allocLambda.addArg(
+              x.scope.isStatic ? JNullLiteral.INSTANCE :
+              new JThisRef(info, (JClassType) outerField.getEnclosingType())
+              );
           for (SyntheticArgumentBinding sa : synthArgs) {
               allocLambda.addArg(makeLocalRef(info, sa.actualOuterLocalVariable, methodStack.peek()));
           }
           ctor.freezeParamTypes();
           samMethod.freezeParamTypes();
 
-          // put the result on the stack, and pop out synthetic method from the scope
+          // put the result on the stack, and pop out synthetic method from the scoped
           push(allocLambda);
           popMethodInfo();
           // Add the newly generated type
@@ -1356,6 +1362,8 @@ public class GwtAstBuilder {
           call.setStaticDispatchOnly();
         }
 
+        // If the method is a JS-interface
+        
         // The arguments come first...
         call.addArgs(arguments);
 
