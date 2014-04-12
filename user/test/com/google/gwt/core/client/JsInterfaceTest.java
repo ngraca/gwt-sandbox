@@ -31,16 +31,12 @@ import java.util.Iterator;
 @DoNotRunWith(Platform.Devel)
 public class JsInterfaceTest extends GWTTestCase {
 
-<<<<<<< HEAD
-  @JsInterface(prototype = "$wnd.MyClass")
-=======
   interface Callback {
     void exec(String value);
   }
 
   @JsInterface(prototype = "$wnd.MyClass",
       constructor = {int.class, int.class})
->>>>>>> Working version of JsInterop Phase 1.
   interface MyClass {
 
     @JsInterface(prototype = "MyClass")
@@ -64,20 +60,15 @@ public class JsInterfaceTest extends GWTTestCase {
     void setY(int a);
 
     int sum(int bias);
-<<<<<<< HEAD
-=======
+
     void go(Callback cb);
->>>>>>> Working version of JsInterop Phase 1.
 
     @PrototypeOfJsInterface
     static class Prototype implements MyClass {
 
-<<<<<<< HEAD
-=======
       Prototype(int x, int y) {
       }
 
->>>>>>> Working version of JsInterop Phase 1.
       @Override
       public int x() {
         return 0;
@@ -101,13 +92,10 @@ public class JsInterfaceTest extends GWTTestCase {
       public int sum(int bias) {
         return 0;
       }
-<<<<<<< HEAD
-=======
 
       @Override
       public void go(Callback cb) {
       }
->>>>>>> Working version of JsInterop Phase 1.
     }
   }
 
@@ -115,27 +103,19 @@ public class JsInterfaceTest extends GWTTestCase {
     public static boolean calledFromJsHostPageWindow = false;
     public static boolean calledFromJsModuleWindow = false;
 
-<<<<<<< HEAD
-    MyClassImpl() {
-      x(42).setY(7);
-=======
     public MyClassImpl() {
       super(42, 7);
->>>>>>> Working version of JsInterop Phase 1.
     }
 
     public int sum(int bias) {
       return super.sum(bias) + 100;
     }
 
-<<<<<<< HEAD
-=======
     @Override
     public void go(Callback cb) {
       cb.exec("World");
     }
 
->>>>>>> Working version of JsInterop Phase 1.
     @JsExport("$wnd.exportedFromJava")
     public static void callMe() {
       calledFromJsHostPageWindow = true;
@@ -178,19 +158,11 @@ public class JsInterfaceTest extends GWTTestCase {
 
   @Override
   protected void gwtSetUp() throws Exception {
-<<<<<<< HEAD
-    ScriptInjector.fromString("function MyClass() {}\n" +
-        "MyClass.prototype.sum = function sum(bias) { return this.x + this.y + bias; }\n" +
-        "MyClass.prototype.go = function(cb) { cb('Hello'); }")
-        .setWindow(ScriptInjector.TOP_WINDOW).inject();
-    ScriptInjector.fromString("function MyClass() {}\n" +
-=======
     ScriptInjector.fromString("function MyClass(a,b) { this.x = a; this.y = b; }\n" +
         "MyClass.prototype.sum = function sum(bias) { return this.x + this.y + bias; }\n" +
         "MyClass.prototype.go = function(cb) { cb('Hello'); }")
         .setWindow(ScriptInjector.TOP_WINDOW).inject();
     ScriptInjector.fromString("function MyClass(a,b) { this.x = a; this.y = b; }\n" +
->>>>>>> Working version of JsInterop Phase 1.
         "MyClass.prototype.sum = function sum(bias) { return this.x + this.y + bias; }\n")
         .inject();
     patchPrototype(MyClassImpl.class);
@@ -302,30 +274,6 @@ public class JsInterfaceTest extends GWTTestCase {
     assertFalse(obj instanceof MyClass.LocalMyClass);
   }
 
-<<<<<<< HEAD
-=======
-  //TODO (cromwellian) Broken tests, fix
-//  public void testSamMethodNative() {
-//    MyClass mc = (MyClass) mainMyClass();
-//    mc.go(new Callback() {
-//      @Override
-//      public void exec(String value) {
-//        assertEquals("Hello", value);
-//      }
-//    });
-//  }
-//
-//  public void testSamMethodJava() {
-//    MyClass mc = new MyClassImpl();
-//    mc.go(new Callback() {
-//      @Override
-//      public void exec(String value) {
-//        assertEquals("World", value);
-//      }
-//    });
-//  }
-
->>>>>>> Working version of JsInterop Phase 1.
   private native boolean alwaysTrue() /*-{
     return !!$wnd;
   }-*/;
