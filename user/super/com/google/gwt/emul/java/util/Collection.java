@@ -15,6 +15,8 @@
  */
 package java.util;
 
+import java.util.function.Consumer;
+
 /**
  * General-purpose interface for storing collections of objects. <a
  * href="http://java.sun.com/j2se/1.5.0/docs/api/java/util/Collection.html">[Sun
@@ -53,4 +55,10 @@ public interface Collection<E> extends Iterable<E> {
   Object[] toArray();
 
   <T> T[] toArray(T[] a);
+  
+  default void forEach(Consumer<E> c) {
+    for (E e : this) {
+      c.accept(e);
+    }
+  }
 }
