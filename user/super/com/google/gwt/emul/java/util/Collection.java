@@ -16,6 +16,7 @@
 package java.util;
 
 import java.util.function.Predicate;
+import java.util.function.Consumer;
 
 /**
  * General-purpose interface for storing collections of objects. <a
@@ -81,4 +82,11 @@ public interface Collection<E> extends Iterable<E> {
 //  default Stream<E> parallelStream() {
 //      return StreamSupport.stream(spliterator(), true);
 //  }
+  
+  default void forEach(Consumer<E> c) {
+    for (E e : this) {
+      c.accept(e);
+    }
+  }
+
 }
