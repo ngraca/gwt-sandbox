@@ -544,7 +544,7 @@ public class UnifyAst implements UnifyAstView {
       JMethod target = x.getTarget();
       if (GWT_CREATE.equals(sig) || OLD_GWT_CREATE.equals(sig)) {
         return createRebindExpression(x);
-      } else if (IMPL_GET_NAME_OF.equals(targetSignature)) {
+      } else if (IMPL_GET_NAME_OF.equals(sig)) {
         return handleImplNameOf(x);
       } else if (magicMethodMap.containsKey(sig)){
         MagicMethodGenerator method = magicMethodMap.get(sig);
