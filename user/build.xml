@@ -99,6 +99,7 @@
 
   <target name="compile" description="Compile all class files"
           unless="compile.complete">
+    <sequential>
     <mkdir dir="${javac.out}"/>
     <gwt.javac excludes="**/super/**">
       <classpath>
@@ -125,9 +126,10 @@
     </gwt.javac>
 
     <!-- Build the BrowserManagerServer_Stub to allow remote browser testing -->
-    <rmic base="${javac.out}"
+<!--    <rmic base="${javac.out}"
           classname="com.google.gwt.junit.remote.BrowserManagerServer"
-          stubversion="1.2"/>
+          stubversion="1.2"/> -->
+    </sequential>
   </target>
 
   <!--
