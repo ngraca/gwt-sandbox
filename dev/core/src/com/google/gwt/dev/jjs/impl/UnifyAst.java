@@ -24,6 +24,7 @@ import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.core.ext.TreeLogger.Type;
 import com.google.gwt.core.ext.typeinfo.TypeOracle;
 import com.google.gwt.dev.CompilerContext;
+import com.google.gwt.dev.cfg.Properties;
 import com.google.gwt.dev.javac.CompilationProblemReporter;
 import com.google.gwt.dev.javac.CompilationState;
 import com.google.gwt.dev.javac.CompilationUnit;
@@ -1331,7 +1332,7 @@ public class UnifyAst implements UnifyAstView {
    * made this entirely recursive, but a work queue uses much less max stack.
    */
   private void mainLoop() {
-    
+
     UnifyVisitor visitor = new UnifyVisitor();
     List<UnifyAstListener> listeners = setupMagicMethods();
     for (UnifyAstListener listener : listeners) {
@@ -1341,7 +1342,7 @@ public class UnifyAst implements UnifyAstView {
     boolean loop = true;
     int maxLoop = 50;
     try {
-      
+
     for (; loop && maxLoop --> 0; ) {
       // Normal behavior for mainLoop()
       while (!todo.isEmpty()) {
@@ -1364,7 +1365,7 @@ public class UnifyAst implements UnifyAstView {
         listener.destroy(logger);
       }
     }
-    
+
   }
 
   private void mapApi(JDeclaredType type) {
@@ -1420,7 +1421,12 @@ public class UnifyAst implements UnifyAstView {
 
   public JDeclaredType findType(String typeName, NameBasedTypeLocator nameBasedTypeLocator)
       throws UnableToCompleteException {
-    JDeclaredType type = internalFindType(typeName, nameBasedTypeLocator, true);
+    return findType(typeName, nameBasedTypeLocator, true);
+  }
+
+  public JDeclaredType findType(String typeName, NameBasedTypeLocator nameBasedTypeLocator, boolean reportErrors)
+      throws UnableToCompleteException {
+    JDeclaredType type = internalFindType(typeName, nameBasedTypeLocator, reportErrors);
     if (errorsFound) {
       // Already logged.
       throw new UnableToCompleteException();
@@ -1430,12 +1436,12 @@ public class UnifyAst implements UnifyAstView {
 
   public JDeclaredType searchForTypeByBinary(String binaryTypeName)
       throws UnableToCompleteException  {
-    return findType(binaryTypeName, binaryNameBasedTypeLocator);
+    return findType(binaryTypeName, binaryNameBasedTypeLocator, false);
   }
 
   public JDeclaredType searchForTypeBySource(String sourceTypeName)
       throws UnableToCompleteException  {
-    return findType(sourceTypeName, sourceNameBasedTypeLocator);
+    return findType(sourceTypeName, sourceNameBasedTypeLocator, false);
   }
 
   private JDeclaredType internalFindType(String typeName, NameBasedTypeLocator nameBasedTypeLocator, boolean reportErrors) {
@@ -1479,16 +1485,31 @@ public class UnifyAst implements UnifyAstView {
     }
     return null;
   }
-  
+
 
   private List<UnifyAstListener> setupMagicMethods() {
     //we use a config property to allow use-defined magic methods.
     List<UnifyAstListener> listeners = new ArrayList<UnifyAstListener>();
     try{
       PropertyOracle props = rpo.getGeneratorContext().getPropertyOracle();
-      ConfigurationProperty methods = props.getConfigurationProperty("gwt.magic.methods");
+      List<String> methods;
+      search:
+      if (props == null) {
+        Properties properties = compilationState.getCompilerContext().getModule().getProperties();
+        for (com.google.gwt.dev.cfg.ConfigurationProperty prop : properties.getConfigurationProperties()) {
+          if (prop.getName().equals("gwt.magic.methods")) {
+            methods = prop.getValues();
+            break search;
+          }
+        }
+        String error = "Unable to find configuration property gwt.magic.methods";
+        logger.log(Type.ERROR, error);
+        throw new RuntimeException(error);
+      } else {
+        methods = props.getConfigurationProperty("gwt.magic.methods").getValues();
+      }
       Map<Class<?>, MagicMethodGenerator> generators = new HashMap<Class<?>, MagicMethodGenerator>();
-      for (String prop : methods.getValues()){
+      for (String prop : methods){
         String[] bits = prop.split("[*]=");
         if (bits.length==2){
           final String clientMethod = bits[0].trim();

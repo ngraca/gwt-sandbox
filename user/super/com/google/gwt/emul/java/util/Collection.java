@@ -82,11 +82,5 @@ public interface Collection<E> extends Iterable<E> {
 //  default Stream<E> parallelStream() {
 //      return StreamSupport.stream(spliterator(), true);
 //  }
-  
-  default void forEach(Consumer<E> c) {
-    for (E e : this) {
-      c.accept(e);
-    }
-  }
 
 }
