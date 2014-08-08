@@ -26,5 +26,15 @@
 			<type>2</type>
 			<locationURI>GWT_ROOT/dev/core</locationURI>
 		</link>
+		<link>
+			<name>dev-src</name>
+			<type>2</type>
+			<location>/opt/gwt-sandbox/dev/core/src</location>
+		</link>
+		<link>
+			<name>dev-super</name>
+			<type>2</type>
+			<location>/opt/gwt-sandbox/dev/core/super</location>
+		</link>
 	</linkedResources>
 </projectDescription>
