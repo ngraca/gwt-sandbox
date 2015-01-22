@@ -37,6 +37,7 @@ import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.core.ext.typeinfo.TypeOracle;
 import com.google.gwt.dev.CompilerContext;
 import com.google.gwt.dev.MinimalRebuildCache;
+import com.google.gwt.dev.cfg.Properties;
 import com.google.gwt.dev.javac.CompilationProblemReporter;
 import com.google.gwt.dev.javac.CompilationState;
 import com.google.gwt.dev.javac.CompilationUnit;
@@ -316,7 +317,7 @@ public class UnifyAst implements UnifyAstView {
         if (GWT_DEBUGGER_METHOD_CALLS.contains(targetSignature)) {
           return; // handled in endVisit for JExpressionStatement
         }
-        JExpression result = handleMagicMethodCall(x, targetSignature);
+        JExpression result = handleMagicMethodCall(x, ctx);
         if (result == null) {
           // Error of some sort.
           result = JNullLiteral.INSTANCE;
@@ -588,14 +589,6 @@ public class UnifyAst implements UnifyAstView {
       return new JNameOf(x.getSourceInfo(), program.getTypeJavaLangString(), (HasName) node);
     }
 
-    private JExpression handleMagicMethodCall(JMethodCall x, String targetSignature) {
-      if (GWT_CREATE.equals(targetSignature) || OLD_GWT_CREATE.equals(targetSignature)) {
-        return createRebindExpression(x);
-      } else if (IMPL_GET_NAME_OF.equals(targetSignature)) {
-        return handleImplNameOf(x);
-      }
-      throw new InternalCompilerException("Unknown magic method");
-    }
     private JExpression handleMagicMethodCall(JMethodCall x, Context ctx) {
       JMethod target = x.getTarget();
       String methodSignature = target.getEnclosingType().getName() + '.' + target.getSignature();
@@ -945,9 +938,24 @@ public class UnifyAst implements UnifyAstView {
     List<UnifyAstListener> listeners = new ArrayList<UnifyAstListener>();
     try {
       PropertyOracle props = rpo.getGeneratorContext().getPropertyOracle();
-      ConfigurationProperty methods = props.getConfigurationProperty("gwt.magic.methods");
+      List<String> methods;
+      search:
+      if (props == null) {
+        Properties properties = compilationState.getCompilerContext().getModule().getProperties();
+        for (com.google.gwt.dev.cfg.ConfigurationProperty prop : properties.getConfigurationProperties()) {
+          if (prop.getName().equals("gwt.magic.methods")) {
+            methods = prop.getValues();
+            break search;
+          }
+        }
+        String error = "Unable to find configuration property gwt.magic.methods";
+        logger.log(Type.ERROR, error);
+        throw new RuntimeException(error);
+      } else {
+        methods = props.getConfigurationProperty("gwt.magic.methods").getValues();
+      }
       Map<Class<?>, MagicMethodGenerator> generators = new HashMap<Class<?>, MagicMethodGenerator>();
-      for (String prop : methods.getValues()) {
+      for (String prop : methods) {
         String[] bits = prop.split("[*]=");
         if (bits.length == 2) {
           final String clientMethod = bits[0].trim();
@@ -990,7 +998,13 @@ public class UnifyAst implements UnifyAstView {
                       return method.toString();
                     }
                   });
+                  maybeAdd:
                   if (UnifyAstListener.class.isAssignableFrom(magicClass)) {
+                    for (UnifyAstListener existing : listeners) {
+                      if (magicClass.isAssignableFrom(existing.getClass())) {
+                        break maybeAdd;
+                      }
+                    }
                     listeners.add(UnifyAstListener.class.cast(magicClass.newInstance()));
                   }
                 } else {
@@ -1005,11 +1019,11 @@ public class UnifyAst implements UnifyAstView {
                   if (generator == null) {
                     generator = (MagicMethodGenerator) magicClass.newInstance();
                     generators.put(magicClass, generator);
+                    if (generator instanceof UnifyAstListener) {
+                      listeners.add((UnifyAstListener) generator);
+                    }
                   }
                   magicMethodMap.put(clientMethod, generator);
-                  if (generator instanceof UnifyAstListener) {
-                    listeners.add((UnifyAstListener) generator);
-                  }
                 }
               }
               MAGIC_METHOD_CALLS.add(clientMethod);
@@ -1694,6 +1708,11 @@ public class UnifyAst implements UnifyAstView {
       boolean loop = true;
       int maxLoop = 50;
 
+      for (UnifyAstListener listener : listeners) {
+        // Allows listeners to inject code at the beginning of an iteration
+        listener.onUnifyAstStart(logger, this, visitor, todo);
+      }
+        
       for (; loop && maxLoop-- > 0;) {
         // Normal behavior for mainLoop()
         while (!todo.isEmpty()) {
